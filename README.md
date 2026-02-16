@@ -32,7 +32,7 @@ O sistema é composto pelos seguintes serviços:
 
 1.  Clone o repositório:
     ```bash
-    git clone [https://github.com/seu-usuario/ordo-finance.git](https://github.com/seu-usuario/ordo-finance.git)
+    git clone https://github.com/migueldufloth/ordo-finance.git
     cd ordo-finance
     ```
 
