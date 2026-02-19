@@ -1,0 +1,189 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Ordo{% endblock %}</title>
+
+<!-- Google Fonts - Inter para modernidade -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<!-- Tailwind CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Alpine.js CDN -->
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+<!-- Configuração do Tailwind -->
+<script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    primary: {
+                        50: '#f7fee7',
+                        100: '#ecfccb',
+                        200: '#d9f99d',
+                        300: '#bef264',
+                        400: '#a3e635',
+                        500: '#84cc16',
+                        600: '#65a30d',
+                        700: '#4d7c0f',
+                        800: '#365314',
+                        900: '#1a2e05',
+                    },
+                    success: '#22c55e',
+                    danger: '#ef4444',
+                    light: '#f8fafc',
+                    dark: {
+                        50: '#f8fafc',
+                        100: '#f1f5f9',
+                        200: '#e2e8f0',
+                        300: '#cbd5e1',
+                        400: '#94a3b8',
+                        500: '#64748b',
+                        600: '#475569',
+                        700: '#334155',
+                        800: '#1e293b',
+                        900: '#0f172a',
+                    },
+                    secondary: '#64748b'
+                },
+                fontFamily: {
+                    'sans': ['Inter', 'system-ui', 'sans-serif'],
+                    'display': ['Inter', 'system-ui', 'sans-serif'],
+                },
+                animation: {
+                    'fade-in': 'fadeIn 0.5s ease-out',
+                    'slide-up': 'slideUp 0.3s ease-out',
+                    'scale-in': 'scaleIn 0.2s ease-out',
+                },
+                keyframes: {
+                    fadeIn: {
+                        '0%': { opacity: '0', transform: 'translateY(10px)' },
+                        '100%': { opacity: '1', transform: 'translateY(0)' }
+                    },
+                    slideUp: {
+                        '0%': { transform: 'translateY(20px)', opacity: '0' },
+                        '100%': { transform: 'translateY(0)', opacity: '1' }
+                    },
+                    scaleIn: {
+                        '0%': { transform: 'scale(0.95)', opacity: '0' },
+                        '100%': { transform: 'scale(1)', opacity: '1' }
+                    }
+                }
+            }
+        }
+    }
+</script>
+
+<style>
+    * {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    .nav-blur {
+        backdrop-filter: blur(20px);
+        background: rgba(255, 255, 255, 0.8);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .card-hover {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .card-hover:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    .income-gradient {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+
+    .expense-gradient {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    }
+
+    .balance-gradient {
+        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    }
+
+    /* Gradientes dos cards originais modernizados */
+    .card-gradient-blue {
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    }
+
+    .card-gradient-green {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+
+    .card-gradient-red {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    }
+
+    .card-gradient-purple {
+        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    }
+
+    .card-gradient-orange {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+
+    .card-gradient-gray {
+        background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+    }
+
+    .card-gradient-black {
+        background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+    }
+
+    /* Dark mode styles */
+    .dark {
+        color-scheme: dark;
+    }
+
+    .dark body {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+    }
+
+    .dark .nav-blur {
+        background: rgba(15, 23, 42, 0.8);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .dark .bg-white {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+    }
+
+    .dark .text-dark-800,
+    .dark .text-dark-700,
+    .dark .text-dark-600 {
+        color: #e2e8f0 !important;
+    }
+
+    .dark .text-dark-500,
+    .dark .text-dark-400 {
+        color: #94a3b8 !important;
+    }
+
+    .dark .border-gray-100,
+    .dark .border-gray-200 {
+        border-color: #334155 !important;
+    }
+
+    .dark .bg-gray-50 {
+        background-color: #334155 !important;
+    }
+
+    .dark .bg-dark-100 {
+        background-color: #334155 !important;
+    }
+
+    .dark .bg-dark-200 {
+        background-color: #475569 !important;
+    }
+</style>
