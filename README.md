@@ -10,9 +10,30 @@ A aplicação permite o controle de receitas e despesas, categorização de lan�
 
 O sistema é composto pelos seguintes serviços:
 
-*   **App Principal (Core - Django):** Responsável pelo gerenciamento de usuários, regras de negócio principais (CRUD de transações), autenticação e renderização da interface (Server-Side Rendering).
+*   **App Principal (Django):** Responsável pelo gerenciamento de usuários, regras de negócio principais (CRUD de transações), autenticação e renderização da interface (Server-Side Rendering).
 *   **Microserviço de Relatórios (FastAPI):** Unidade isolada para processamento de tarefas intensivas (geração de PDF e exportação de dados), comunicando-se com o Core via API HTTP.
 *   **Banco de Dados (PostgreSQL):** Armazenamento relacional centralizado.
+
+## Requisitos Funcionais
+
+*   **RF01:** Autenticação segura com login/logout
+*   **RF02:** CRUD de transações (receitas e despesas) com data, descrição, valor, categoria e cartão opcional
+*   **RF03:** Gerenciamento de cartões de crédito (nome, limite, fechamento, vencimento, cor)
+*   **RF04:** Categorização personalizada de transações por usuário
+*   **RF05:** Dashboard com saldo total, resumo mensal e últimos 5 lançamentos
+*   **RF06:** Histórico completo de transações com paginação
+*   **RF07:** Isolamento de dados por usuário (sem vazamento entre contas)
+*   **RF08:** Exportação de relatórios em PDF via microserviço
+
+## Requisitos Não Funcionais
+
+*   **RNF01:** Arquitetura híbrida (Django monolito + FastAPI microserviço)
+*   **RNF02:** Backend em Python 3.12+ com Django 5.x e FastAPI
+*   **RNF03:** Frontend Server-Side Rendering (Django Templates + TailwindCSS + Alpine.js)
+*   **RNF04:** Rotas protegidas por autenticação obrigatória
+*   **RNF05:** Integridade referencial com proteção de histórico (PROTECT) e deleção em cascata (CASCADE)
+*   **RNF06:** Paginação de listagens (máximo 10 itens/página)
+*   **RNF07:** Infraestrutura containerizada via Docker Compose
 
 ## Tecnologias Utilizadas
 
