@@ -1,13 +1,22 @@
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+import dj_database_url
+
+# Load environment variables from .env file if present
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-p@o&_yz)bzu-)180)jm-k@d#9%a0=glsc3ts#*x$13as%y3-ab'
+# Default to a generic secret if not provided in environment for safety 
+# (though it SHOULD be in production env vars)
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-p@o&_yz)bzu-)180)jm-k@d#9%a0=glsc3ts#*x$13as%y3-ab')
 
-DEBUG = True
+# Default False in production. Set DEBUG=True in .env for local
+DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = []
+# Allow splitting ALLOWED_HOSTS by comma from env
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -48,11 +57,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'ordo_project.wsgi.application'
 
+# dj-database-url handles parsing the DATABASE_URL environment variable.
+# Example for Docker/Render: DATABASE_URL=postgres://user:password@host:port/dbname
+# If DATABASE_URL is not provided, it falls back to the original local SQLite setup.
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 }
 
 AUTH_PASSWORD_VALIDATORS = [
