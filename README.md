@@ -14,53 +14,46 @@ O sistema é composto pelos seguintes serviços:
 *   **Microserviço de Relatórios (FastAPI):** Unidade isolada para processamento de tarefas intensivas (geração de PDF e exportação de dados), comunicando-se com o Core via API HTTP.
 *   **Banco de Dados (PostgreSQL):** Armazenamento relacional centralizado.
 
-## Modelo Entidade-Relacionamento (ER)
+## Arquitetura C4
 
-Abaixo está a modelagem do banco de dados na nuvem gerado pelo Django (focado no aplicativo *Finanças*):
+### Nível 1 — Diagrama de Contexto
+
+Visão de alto nível mostrando o sistema Ordo Finance e seus atores externos.
 
 ```mermaid
-erDiagram
-    USER {
-        int id PK
-        string username
-        string email
-        string password
-        boolean is_active
-    }
-    
-    CATEGORIA {
-        int id PK
-        int usuario_id FK
-        string nome
-    }
-    
-    CARTAOCREDITO {
-        int id PK
-        int usuario_id FK
-        string nome
-        decimal limite
-        int dia_fechamento
-        int dia_vencimento
-        string cor
-    }
-    
-    TRANSACAO {
-        int id PK
-        int usuario_id FK
-        date data
-        string tipo
-        string descricao
-        decimal valor
-        int categoria_id FK
-        int cartao_credito_id FK
-        boolean fatura_paga
+C4Context
+    title Diagrama de Contexto - Ordo Finance
+
+    Person(usuario, "Usuário", "Pessoa que deseja gerenciar suas finanças pessoais")
+
+    System(ordo, "Ordo Finance", "Permite o controle de receitas, despesas, cartões de crédito e visualização de balanços financeiros")
+
+    System_Ext(supabase, "Supabase", "Plataforma BaaS que hospeda o banco de dados PostgreSQL na nuvem")
+
+    Rel(usuario, ordo, "Acessa o painel, registra transações e gerencia cartões via", "HTTPS")
+    Rel(ordo, supabase, "Persiste e consulta dados financeiros via", "PostgreSQL/SSL")
+```
+
+### Nível 2 — Diagrama de Containers
+
+Decomposição interna do sistema, mostrando os containers que compõem a aplicação.
+
+```mermaid
+C4Container
+    title Diagrama de Containers - Ordo Finance
+
+    Person(usuario, "Usuário", "Pessoa que deseja gerenciar suas finanças pessoais")
+
+    Container_Boundary(ordo_boundary, "Sistema Ordo Finance") {
+        Container(django_app, "Aplicação Web", "Python, Django 5.x, TailwindCSS, Alpine.js", "Monolito responsável por autenticação, CRUD de transações e cartões, dashboard financeiro e renderização SSR")
+        Container(fastapi_svc, "Microserviço de Relatórios", "Python, FastAPI", "Serviço isolado para geração de relatórios em PDF e exportação de dados")
+        ContainerDb(postgres, "Banco de Dados", "PostgreSQL via Supabase", "Armazena usuários, categorias, cartões de crédito e transações")
     }
 
-    USER ||--o{ CATEGORIA : "possui"
-    USER ||--o{ CARTAOCREDITO : "possui"
-    USER ||--o{ TRANSACAO : "registra"
-    CATEGORIA ||--o{ TRANSACAO : "classifica"
-    CARTAOCREDITO |o--o{ TRANSACAO : "paga"
+    Rel(usuario, django_app, "Acessa via navegador", "HTTPS")
+    Rel(django_app, postgres, "Lê e persiste dados via", "ORM Django / SQL")
+    Rel(django_app, fastapi_svc, "Solicita geração de relatórios via", "HTTP/REST")
+    Rel(fastapi_svc, postgres, "Consulta dados para relatórios via", "SQL")
 ```
 
 ## Requisitos Funcionais
