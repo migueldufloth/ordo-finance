@@ -21,17 +21,17 @@ O sistema é composto pelos seguintes serviços:
 Visão de alto nível mostrando o sistema Ordo Finance e seus atores externos.
 
 ```mermaid
-C4Context
-    title Diagrama de Contexto - Ordo Finance
+flowchart TD
+    U["<b>Usuário</b><br/>Gerencia suas finanças pessoais"]
+    O["<b>Ordo Finance</b><br/>Sistema de gestão financeira"]
+    S["<b>Supabase</b><br/>PostgreSQL na nuvem"]
 
-    Person(usuario, "Usuário", "Pessoa que deseja gerenciar suas finanças pessoais")
+    U -->|"HTTPS"| O
+    O -->|"PostgreSQL / SSL"| S
 
-    System(ordo, "Ordo Finance", "Permite o controle de receitas, despesas, cartões de crédito e visualização de balanços financeiros")
-
-    System_Ext(supabase, "Supabase", "Plataforma BaaS que hospeda o banco de dados PostgreSQL na nuvem")
-
-    Rel(usuario, ordo, "Acessa o painel, registra transações e gerencia cartões via", "HTTPS")
-    Rel(ordo, supabase, "Persiste e consulta dados financeiros via", "PostgreSQL/SSL")
+    style U fill:#08427B,stroke:#052E56,color:#fff
+    style O fill:#1168BD,stroke:#0B4884,color:#fff
+    style S fill:#777,stroke:#555,color:#fff
 ```
 
 ### Nível 2 — Diagrama de Containers
@@ -39,21 +39,50 @@ C4Context
 Decomposição interna do sistema, mostrando os containers que compõem a aplicação.
 
 ```mermaid
-C4Container
-    title Diagrama de Containers - Ordo Finance
+flowchart LR
+    U["<b>Usuário</b><br/>Navegador Web"]
 
-    Person(usuario, "Usuário", "Pessoa que deseja gerenciar suas finanças pessoais")
+    subgraph boundary ["Sistema Ordo Finance"]
+        direction TB
+        DJ["<b>Aplicação Web</b><br/>Django 5.x · TailwindCSS · Alpine.js<br/><i>Auth, CRUD, Dashboard SSR</i>"]
+        FA["<b>Microserviço de Relatórios</b><br/>FastAPI<br/><i>Geração de PDF e exportação</i>"]
+        PG[("<b>Banco de Dados</b><br/>PostgreSQL · Supabase")]
+    end
 
-    Container_Boundary(ordo_boundary, "Sistema Ordo Finance") {
-        Container(django_app, "Aplicação Web", "Python, Django 5.x, TailwindCSS, Alpine.js", "Monolito responsável por autenticação, CRUD de transações e cartões, dashboard financeiro e renderização SSR")
-        Container(fastapi_svc, "Microserviço de Relatórios", "Python, FastAPI", "Serviço isolado para geração de relatórios em PDF e exportação de dados")
-        ContainerDb(postgres, "Banco de Dados", "PostgreSQL via Supabase", "Armazena usuários, categorias, cartões de crédito e transações")
-    }
+    U -->|"HTTPS"| DJ
+    DJ -->|"HTTP / REST"| FA
+    DJ -->|"ORM / SQL"| PG
+    FA -->|"SQL"| PG
 
-    Rel(usuario, django_app, "Acessa via navegador", "HTTPS")
-    Rel(django_app, postgres, "Lê e persiste dados via", "ORM Django / SQL")
-    Rel(django_app, fastapi_svc, "Solicita geração de relatórios via", "HTTP/REST")
-    Rel(fastapi_svc, postgres, "Consulta dados para relatórios via", "SQL")
+    style U fill:#08427B,stroke:#052E56,color:#fff
+    style DJ fill:#1168BD,stroke:#0B4884,color:#fff
+    style FA fill:#1168BD,stroke:#0B4884,color:#fff
+    style PG fill:#2D882D,stroke:#1B5E1B,color:#fff
+    style boundary fill:#f5f5f5,stroke:#999,color:#333
+```
+
+### Nível 3 — Diagrama de Componentes (Aplicação Web Django)
+
+Decomposição interna do container principal, mostrando os módulos que compõem a aplicação Django.
+
+```mermaid
+flowchart TD
+    subgraph django ["Aplicação Web — Django 5.x"]
+        AUTH["<b>Autenticação</b><br/><i>django.contrib.auth</i>"] ~~~ DASH["<b>Dashboard</b><br/><i>views.dashboard</i>"]
+        TRANS["<b>Transações</b><br/><i>FBV + Forms</i>"] ~~~ CART["<b>Cartões</b><br/><i>CBV + Forms</i>"]
+        AUTH & DASH & TRANS & CART --> TPL["<b>Templates SSR</b><br/><i>TailwindCSS · Alpine.js</i>"]
+    end
+
+    PG[("<b>Banco de Dados</b><br/>PostgreSQL · Supabase")]
+    django -->|"ORM / SQL"| PG
+
+    style AUTH fill:#4A90D9,stroke:#2C6FAC,color:#fff
+    style DASH fill:#4A90D9,stroke:#2C6FAC,color:#fff
+    style TRANS fill:#4A90D9,stroke:#2C6FAC,color:#fff
+    style CART fill:#4A90D9,stroke:#2C6FAC,color:#fff
+    style TPL fill:#E67E22,stroke:#C0651A,color:#fff
+    style PG fill:#2D882D,stroke:#1B5E1B,color:#fff
+    style django fill:#f5f5f5,stroke:#999,color:#333
 ```
 
 ## Requisitos Funcionais
