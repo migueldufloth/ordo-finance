@@ -16,7 +16,7 @@ O sistema é composto pelos seguintes serviços:
 
 ## Arquitetura C4
 
-### Nível 1 — Diagrama de Contexto
+### Nível 1: Diagrama de Contexto
 
 Visão de alto nível mostrando o sistema Ordo Finance e seus atores externos.
 
@@ -34,7 +34,7 @@ flowchart TD
     style S fill:#777,stroke:#555,color:#fff
 ```
 
-### Nível 2 — Diagrama de Containers
+### Nível 2: Diagrama de Containers
 
 Decomposição interna do sistema, mostrando os containers que compõem a aplicação.
 
@@ -61,7 +61,7 @@ flowchart LR
     style boundary fill:#f5f5f5,stroke:#999,color:#333
 ```
 
-### Nível 3 — Diagrama de Componentes (Aplicação Web Django)
+### Nível 3: Diagrama de Componentes (Aplicação Web Django)
 
 Decomposição interna do container principal, mostrando os módulos que compõem a aplicação Django.
 
