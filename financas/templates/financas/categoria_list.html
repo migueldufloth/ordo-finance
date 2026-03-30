@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mb-6 flex justify-between items-center">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-800">Categorias</h1>
+        <p class="text-gray-600">Gerencie suas categorias customizadas.</p>
+    </div>
+    <a href="{% url 'categoria_create' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        Nova Categoria
+    </a>
+</div>
+
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <table class="w-full text-left border-collapse">
+        <thead>
+            <tr class="bg-gray-50 border-b border-gray-100 text-sm text-gray-500 uppercase">
+                <th class="p-4 font-medium">Nome</th>
+                <th class="p-4 font-medium text-right w-32">Ações</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+            {% for categoria in object_list %}
+            <tr class="hover:bg-gray-50/50 transition-colors">
+                <td class="p-4">
+                    <div class="font-medium text-gray-800">{{ categoria.nome }}</div>
+                </td>
+                <td class="p-4 text-right">
+                    <div class="flex items-center justify-end space-x-2">
+                        <a href="{% url 'categoria_update' categoria.pk %}" class="text-blue-500 hover:text-blue-700 p-1.5 focus:outline-none">Config</a>
+                        <a href="{% url 'categoria_delete' categoria.pk %}" class="text-red-500 hover:text-red-700 p-1.5 focus:outline-none">Dell</a>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="2" class="p-8 text-center text-gray-500">
+                    <svg class="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                    </svg>
+                    <p>Nenhuma categoria cadastrada ainda.</p>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

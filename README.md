@@ -6,83 +6,100 @@ Sistema de gestão financeira pessoal desenvolvido com foco em arquitetura orien
 
 A aplicação permite o controle de receitas e despesas, categorização de lançamentos e visualização de balanços financeiros. O projeto foi estruturado para demonstrar a coexistência de um monolito robusto (Django) conectado a um banco de dados na nuvem (PostgreSQL) com microserviços especializados (FastAPI), utilizando conteinerização para orquestração do ambiente.
 
-## Arquitetura do Sistema
+## Estrutura de Produção e Arquitetura do Sistema
 
-O sistema é composto pelos seguintes serviços:
+O sistema é composto de serviços dockerizados independentes para facilitar o *deploy* em plataformas na nuvem como **Render.com** ou **Railway**.
 
-*   **App Principal (Django):** Responsável pelo gerenciamento de usuários, regras de negócio principais (CRUD de transações), autenticação e renderização da interface (Server-Side Rendering).
-*   **Microserviço de Relatórios (FastAPI):** Unidade isolada para processamento de tarefas intensivas (geração de PDF e exportação de dados), comunicando-se com o Core via API HTTP.
-*   **Banco de Dados (PostgreSQL):** Armazenamento relacional centralizado.
+*   **App Principal (Django Monolito):** Responsável pelo gerenciamento de usuários, regras de negócio principais e renderização da interface. Em produção, ele opera atrás do **Gunicorn** (multi-workers) e gerencia ativos estáticos através do **WhiteNoise**, impulsionado por um `entrypoint.sh` seguro que realiza as rotinas de banco.
+*   **Microserviço (FastAPI):** Unidade focada no isolamento de tarefas intensivas, executado assincronamente através do servidor **Uvicorn**, comunicando-se com o Core via API HTTP.
+*   **Banco de Dados (PostgreSQL - Supabase):** Armazenamento relacional centralizado servido como PaaS gratuito.
 
 ## Arquitetura C4
 
+Os diagramas abaixo utilizam o padrão **C4 Model** (Context, Container, Component) suportado nativamente pelo Mermaid no GitHub para representar como a aplicação funciona e quem são os envolvidos.
+
 ### Nível 1: Diagrama de Contexto
 
-Visão de alto nível mostrando o sistema Ordo Finance e seus atores externos.
+Visão de alto nível mostrando o sistema Ordo Finance, o usuário principal e o provedor de nuvem (Supabase).
 
 ```mermaid
-flowchart TD
-    U["<b>Usuário</b><br/>Gerencia suas finanças pessoais"]
-    O["<b>Ordo Finance</b><br/>Sistema de gestão financeira"]
-    S["<b>Supabase</b><br/>PostgreSQL na nuvem"]
+C4Context
+    title Nível 1: Diagrama de Contexto de Sistema - Ordo Finance
+    
+    Person(usuario, "Usuário do Sistema", "Acompanha suas finanças, receitas e cartões.")
+    
+    System(ordo, "Ordo Finance", "Plataforma instalada em PaaS (Ex: Render.com). Entregue via Docker.")
+    
+    SystemExt(supabase, "Supabase (PostgreSQL)", "PaaS Database que hospeda o Postgres para armazenamento seguro na nuvem.")
 
-    U -->|"HTTPS"| O
-    O -->|"PostgreSQL / SSL"| S
-
-    style U fill:#08427B,stroke:#052E56,color:#fff
-    style O fill:#1168BD,stroke:#0B4884,color:#fff
-    style S fill:#777,stroke:#555,color:#fff
+    Rel_R(usuario, ordo, "Acessa a interface web via", "HTTPS")
+    Rel_R(ordo, supabase, "Lê e grava dados via", "PostgreSQL Protocol")
+    
+    UpdateElementStyle(usuario, $fontColor="white", $bgColor="#08427B", $borderColor="#052E56")
+    UpdateElementStyle(ordo, $fontColor="white", $bgColor="#1168BD", $borderColor="#0B4884")
+    UpdateElementStyle(supabase, $fontColor="white", $bgColor="#555555", $borderColor="#333333")
 ```
 
 ### Nível 2: Diagrama de Containers
 
-Decomposição interna do sistema, mostrando os containers que compõem a aplicação.
+Decomposição interna do sistema, detalhando o monolito principal (Django), o banco de dados e o microserviço projetado.
 
 ```mermaid
-flowchart LR
-    U["<b>Usuário</b><br/>Navegador Web"]
+C4Container
+    title Nível 2: Diagrama de Containers - Ordo Finance
+    
+    Person(usuario, "Usuário", "Pessoa monitorando finanças")
 
-    subgraph boundary ["Sistema Ordo Finance"]
-        direction TB
-        DJ["<b>Aplicação Web</b><br/>Django 5.x · TailwindCSS · Alpine.js<br/><i>Auth, CRUD, Dashboard SSR</i>"]
-        FA["<b>Microserviço de Relatórios</b><br/>FastAPI<br/><i>Geração de PDF e exportação</i>"]
-        PG[("<b>Banco de Dados</b><br/>PostgreSQL · Supabase")]
-    end
-
-    U -->|"HTTPS"| DJ
-    DJ -->|"HTTP / REST"| FA
-    DJ -->|"ORM / SQL"| PG
-    FA -->|"SQL"| PG
-
-    style U fill:#08427B,stroke:#052E56,color:#fff
-    style DJ fill:#1168BD,stroke:#0B4884,color:#fff
-    style FA fill:#1168BD,stroke:#0B4884,color:#fff
-    style PG fill:#2D882D,stroke:#1B5E1B,color:#fff
-    style boundary fill:#f5f5f5,stroke:#999,color:#333
+    System_Boundary(c1, "Nuvem de Hospedagem (Render / Fly.io)") {
+        Container(webapp, "App Web Principal", "Docker, Django, Gunicorn", "Monolito SSR responsável pelo Core. Servido confiavelmente com WhiteNoise.")
+        Container(api, "Microserviço de Relatórios", "Docker, FastAPI, Uvicorn", "Backend isolado para rotinas sem afetar o Core Web.")
+    }
+    
+    System_Boundary(c2, "Supabase") {
+        ContainerDb(db, "Banco de Dados", "PostgreSQL", "Armazena transações, usuários e hashes.")
+    }
+    
+    Rel_R(usuario, webapp, "Acessa páginas via", "HTTPS")
+    Rel_D(webapp, api, "Delega geração de PDF via", "REST")
+    Rel_D(webapp, db, "Consultas transacionais via", "Django ORM")
+    Rel_L(api, db, "Agrega dados via", "SQL puro")
+    
+    UpdateElementStyle(webapp, $fontColor="white", $bgColor="#1168BD", $borderColor="#0B4884")
+    UpdateElementStyle(api, $fontColor="white", $bgColor="#1168BD", $borderColor="#0B4884")
+    UpdateElementStyle(db, $fontColor="white", $bgColor="#2D882D", $borderColor="#1B5E1B")
 ```
 
-### Nível 3: Diagrama de Componentes (Aplicação Web Django)
+### Nível 3: Diagrama de Componentes (Aplicação Web Principal)
 
-Decomposição interna do container principal, mostrando os módulos que compõem a aplicação Django.
+Decomposição interna do Container "Aplicação Web Principal", mapeando exatamente como o código do Django está estruturado no repositório.
 
 ```mermaid
-flowchart TD
-    subgraph django ["Aplicação Web — Django 5.x"]
-        AUTH["<b>Autenticação</b><br/><i>django.contrib.auth</i>"] ~~~ DASH["<b>Dashboard</b><br/><i>views.dashboard</i>"]
-        TRANS["<b>Transações</b><br/><i>FBV + Forms</i>"] ~~~ CART["<b>Cartões</b><br/><i>CBV + Forms</i>"]
-        AUTH & DASH & TRANS & CART --> TPL["<b>Templates SSR</b><br/><i>TailwindCSS · Alpine.js</i>"]
-    end
+C4Component
+    title Nível 3: Diagrama de Componentes - Monolito Django
+    
+    Container_Boundary(webapp, "App Web Core (Django)") {
+        Component(views, "Controladores (views.py)", "FBV / CBV", "Lógica central: dashboard, transacao_views, categoria_views e cartao_views.")
+        Component(templates, "Templates SSR (.html)", "Tailwind + Alpine", "Arquivos base.html, includes/ e painéis injetados com contexto nativo.")
+        Component(auth, "Segurança (contrib.auth)", "Decorators", "Uso do @login_required e sessões de usuário isoladas no banco.")
+        Component(forms, "Validadores (forms.py)", "Django Forms", "Classes TransacaoForm, CartaoCreditoForm e CategoriaForm.")
+        Component(models, "Domínios (models.py)", "Django ORM", "Classes Transacao, Categoria e CartaoCredito com suas FKs.")
+    }
+    
+    ContainerDb(db, "PostgreSQL", "Supabase", "Armazena as tabelas espelhadas do ORM.")
 
-    PG[("<b>Banco de Dados</b><br/>PostgreSQL · Supabase")]
-    django -->|"ORM / SQL"| PG
-
-    style AUTH fill:#4A90D9,stroke:#2C6FAC,color:#fff
-    style DASH fill:#4A90D9,stroke:#2C6FAC,color:#fff
-    style TRANS fill:#4A90D9,stroke:#2C6FAC,color:#fff
-    style CART fill:#4A90D9,stroke:#2C6FAC,color:#fff
-    style TPL fill:#E67E22,stroke:#C0651A,color:#fff
-    style PG fill:#2D882D,stroke:#1B5E1B,color:#fff
-    style django fill:#f5f5f5,stroke:#999,color:#333
+    Rel_R(views, templates, "Injeta contexto renderizado em", "HTTP Response")
+    Rel_D(views, auth, "Bloqueia acesso sem sessão via")
+    Rel_D(views, forms, "Despacha requisições POST para")
+    Rel_D(views, models, "Faz Queries / Filtros através de")
+    Rel_L(forms, models, "Cria ou Atualiza instâncias em")
+    Rel_R(auth, models, "Lê chaves e profiles usando")
+    Rel_D(models, db, "Sincroniza schema e dados via", "SQL (Psycopg2)")
+    
+    UpdateElementStyle(auth, $fontColor="white", $bgColor="#4A90D9", $borderColor="#2C6FAC")
+    UpdateElementStyle(views, $fontColor="white", $bgColor="#4A90D9", $borderColor="#2C6FAC")
+    UpdateElementStyle(forms, $fontColor="white", $bgColor="#4A90D9", $borderColor="#2C6FAC")
+    UpdateElementStyle(models, $fontColor="white", $bgColor="#4A90D9", $borderColor="#2C6FAC")
+    UpdateElementStyle(templates, $fontColor="white", $bgColor="#E67E22", $borderColor="#C0651A")
 ```
 
 ## Requisitos Funcionais
@@ -109,28 +126,38 @@ flowchart TD
 ## Tecnologias Utilizadas
 
 *   **Backend:** Python 3.12+, Django 5.x, FastAPI
+*   **Servidores de Produção:** Gunicorn (Django), Uvicorn (FastAPI), WhiteNoise (Assets HD)
 *   **Frontend:** TailwindCSS, Alpine.js
-*   **Infraestrutura:** Docker, Docker Compose
-*   **Banco de Dados:** PostgreSQL (nuvem via Supabase)
+*   **Infraestrutura e Deploy:** Docker (Imagens Multi-container), Render.com / Railway
+*   **Banco de Dados:** PostgreSQL Cloud (Supabase)
 
-## Como Executar o Projeto
+## Como Fazer o Deploy para Produção (Render.com)
 
-### Pré-requisitos
+Graças ao encapsulamento em Docker puro e configuração universal das Variáveis de Ambiente, a plataforma do **Render.com** (que possui *Tier Gratuito*) é a nossa opção de infraestrutura Cloud recomendada!
 
-*   Docker e Docker Compose instalados
-*   Python 3.12+ (para execução local opcional)
-*   Git
+### Passo a Passo
 
-### Passo a Passo (Via Docker)
+1. Tenha o `DATABASE_URL` do seu projeto Supabase em mãos.
+2. Acesse sua conta no **Render.com** e crie um novo **Web Service**.
+3. Vincule seu repositório do Github contendo o Ordo Finance.
+4. Em *Environment*, selecione **Docker**. O Render fará a leitura automática e construirá o app pelas diretrizes do seu `Dockerfile`.
+5. Preencha as Variáveis (*Environment Variables*):
+   - `DATABASE_URL` = [A connection string que você obteve no Supabase]
+   - `SECRET_KEY` = [Gere um passkey/hash aleatório para proteger seu Django]
+   - `DEBUG` = `False`
+   - `ALLOWED_HOSTS` = `*`
+6. Clique em **Deploy**! A plataforma subirá instâncias Linux e em minutos você terá acesso seguro via `https://ordo-finance-suaconta.onrender.com`.
 
-1.  Clone o repositório:
-    ```bash
-    git clone https://github.com/migueldufloth/ordo-finance.git
-    cd ordo-finance
-    ```
-2. Crie o arquivo `.env` na raiz do projeto com base nas suas credenciais do banco de dados na nuvem (`DATABASE_URL`).
+---
 
-3.  Suba os containers da aplicação:
+## Como Executar o Projeto (Localmente para Testes)
+
+### Via Docker Compose (Recomendado)
+
+O projeto possui de forma nativamente acoplada um `docker-compose.prod.yml` arquitetado para Nuvem e também suporta devs locais.
+
+1. Clone o projeto e crie um arquivo `.env` na raiz informando o `DATABASE_URL`.
+2. Rode no bash:
     ```bash
     docker-compose up --build
     ```

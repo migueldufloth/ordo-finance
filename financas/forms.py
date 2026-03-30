@@ -19,12 +19,13 @@ class TransacaoForm(forms.ModelForm):
 
     class Meta:
         model = Transacao
-        fields = ['data', 'tipo', 'descricao', 'valor', 'categoria', 'cartao_credito']
+        fields = ['data', 'tipo', 'descricao', 'valor', 'categoria', 'cartao_credito', 'fatura_paga']
         widgets = {
             'tipo': forms.Select(attrs={'class': TAILWIND_INPUT_STYLE}),
             'data': forms.DateInput(attrs={'type': 'date', 'class': TAILWIND_INPUT_STYLE}),
             'descricao': forms.TextInput(attrs={'class': TAILWIND_INPUT_STYLE, 'placeholder': 'Ex: Salário, Aluguel'}),
             'valor': forms.NumberInput(attrs={'class': TAILWIND_INPUT_STYLE, 'step': '0.01'}),
+            'fatura_paga': forms.CheckboxInput(attrs={'class': 'w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -44,4 +45,12 @@ class CartaoCreditoForm(forms.ModelForm):
             'limite': forms.NumberInput(attrs={'class': TAILWIND_INPUT_STYLE, 'step': '0.01'}),
             'dia_fechamento': forms.NumberInput(attrs={'class': TAILWIND_INPUT_STYLE, 'min': '1', 'max': '31'}),
             'dia_vencimento': forms.NumberInput(attrs={'class': TAILWIND_INPUT_STYLE, 'min': '1', 'max': '31'}),
+        }
+
+class CategoriaForm(forms.ModelForm):
+    class Meta:
+        model = Categoria
+        fields = ['nome']
+        widgets = {
+            'nome': forms.TextInput(attrs={'class': TAILWIND_INPUT_STYLE, 'placeholder': 'Ex: Alimentação, Transporte'}),
         }

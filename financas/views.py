@@ -7,8 +7,8 @@ from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
 
-from .models import Transacao, CartaoCredito
-from .forms import TransacaoForm, CartaoCreditoForm
+from .models import Transacao, CartaoCredito, Categoria
+from .forms import TransacaoForm, CartaoCreditoForm, CategoriaForm
 
 
 @login_required
@@ -60,6 +60,19 @@ def adicionar_transacao(request):
 
 
 @login_required
+def editar_transacao(request, pk):
+    """Edita uma transação existente."""
+    transacao = get_object_or_404(Transacao, pk=pk, usuario=request.user)
+    form = TransacaoForm(request.POST or None, instance=transacao, user=request.user)
+    
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        return redirect("lista_transacoes")
+
+    return render(request, "financas/adicionar_transacao.html", {"form": form, "editando": True, "transacao": transacao})
+
+
+@login_required
 def remover_transacao(request, pk):
     """Remove uma transação com confirmação."""
     transacao = get_object_or_404(Transacao, pk=pk, usuario=request.user)
@@ -104,4 +117,35 @@ class CartaoCreditoDeleteView(BaseCartaoCreditoView, DeleteView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['type'] = 'cartão de crédito'
+        return context
+
+# Mixin e Base View para Categorias
+class BaseCategoriaView(LoginRequiredMixin):
+    model = Categoria
+    success_url = reverse_lazy("categoria_list")
+
+    def get_queryset(self):
+        return Categoria.objects.filter(usuario=self.request.user)
+
+class CategoriaListView(BaseCategoriaView, ListView):
+    template_name = "financas/categoria_list.html"
+
+class CategoriaCreateView(BaseCategoriaView, CreateView):
+    form_class = CategoriaForm
+    template_name = "financas/categoria_form.html"
+
+    def form_valid(self, form):
+        form.instance.usuario = self.request.user
+        return super().form_valid(form)
+
+class CategoriaUpdateView(BaseCategoriaView, UpdateView):
+    form_class = CategoriaForm
+    template_name = "financas/categoria_form.html"
+
+class CategoriaDeleteView(BaseCategoriaView, DeleteView):
+    template_name = "financas/confirm_delete.html"
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['type'] = 'categoria'
         return context
