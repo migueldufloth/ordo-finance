@@ -157,6 +157,38 @@ erDiagram
 
 ---
 
+## Screenshots
+
+### Login
+![Login](imgs/login.png)
+
+### Dashboard
+Exibe receitas e despesas do mês atual, saldo total e os últimos lançamentos registrados.
+
+![Dashboard](imgs/dashboard.png)
+
+### Lançamentos
+Lista completa de transações com data, descrição, categoria, valor e tipo (receita/despesa).
+
+![Lançamentos](imgs/lancamentos.png)
+
+### Novo Lançamento
+Formulário para registrar uma transação com tipo, data, descrição, valor, categoria e cartão de crédito opcional.
+
+![Novo Lançamento](imgs/criar-lancamento.png)
+
+### Cartões de Crédito
+Visualização dos cartões cadastrados com limite, dia de fechamento e vencimento.
+
+![Cartões de Crédito](imgs/cartoes.png)
+
+### Novo Cartão de Crédito
+Formulário para cadastrar um cartão com nome, cor, limite, dia de fechamento e vencimento.
+
+![Novo Cartão](imgs/criar-cartao.png)
+
+---
+
 ## Rotas da Aplicação
 
 ### Django (porta 8000)
