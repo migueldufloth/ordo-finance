@@ -10,138 +10,108 @@ A aplicação permite controle de receitas e despesas, categorização de lança
 
 ## Arquitetura do Sistema
 
-### Nível 1 — Contexto
+### Nível 1: Contexto
 
 Visão de alto nível: quem usa o sistema e com o que ele se comunica.
 
 ```mermaid
-flowchart TD
-    U["👤 Usuário\n──────────────\nAcompanha finanças\nvia navegador web"]
-    O["🏦 Ordo Finance\n──────────────\nAplicação Web\nRender.com · Docker"]
-    DB[("🗄️ PostgreSQL\n──────────────\nBanco de Dados\nRender · Free Tier")]
+C4Context
+    title Nível 1: Contexto do Sistema
 
-    U -- "HTTPS" --> O
-    O -- "SQL · psycopg2" --> DB
+    Person(user, "Usuário", "Controla receitas, despesas e cartões de crédito pelo navegador")
+    System(ordo, "Ordo Finance", "Aplicação web de gestão financeira pessoal hospedada no Render.com via Docker")
+    SystemDb_Ext(db, "PostgreSQL", "Banco de dados relacional no Render Free Tier")
 
-    style U  fill:#08427B,color:#FFFFFF,stroke:#052E56
-    style O  fill:#1168BD,color:#FFFFFF,stroke:#0B4884
-    style DB fill:#2D882D,color:#FFFFFF,stroke:#1B5E1B
+    Rel_D(user, ordo, "Acessa via HTTPS")
+    Rel_D(ordo, db, "Lê e grava dados")
+
+    UpdateElementStyle(user, $fontColor="white", $bgColor="#08427B", $borderColor="#052E56")
+    UpdateElementStyle(ordo, $fontColor="white", $bgColor="#1168BD", $borderColor="#0B4884")
+    UpdateElementStyle(db,   $fontColor="white", $bgColor="#2D882D", $borderColor="#1B5E1B")
+    UpdateRelStyle(user, ordo, $textColor="white", $lineColor="#aaaaaa", $offsetY="-10")
+    UpdateRelStyle(ordo, db,   $textColor="white", $lineColor="#aaaaaa", $offsetY="-10")
 ```
 
 ---
 
-### Nível 2 — Containers
+### Nível 2: Containers
 
 Decomposição dos serviços que compõem o sistema em produção.
 
 ```mermaid
-flowchart TD
-    U["👤 Usuário"]
+C4Container
+    title Nível 2: Containers
 
-    subgraph RENDER["☁️  Render.com"]
-        direction TB
-        WEB["🐍 App Principal\n──────────────\nDjango 5 · Gunicorn · WhiteNoise\nDocker · porta 8000\n\nAutenticação · CRUD · Dashboard\nTemplates SSR · Assets estáticos"]
-        API["⚡ Microserviço de Relatórios\n──────────────\nFastAPI · Uvicorn\nDocker · porta 8001\n\nGeração de PDFs (planejado)"]
-    end
+    Person(user, "Usuário", "Acessa a interface web pelo navegador")
 
-    subgraph DB_HOST["🗄️  Banco de Dados"]
-        DB[("PostgreSQL\nRender Free DB\n\ntransacoes · categorias\ncartoes · users")]
-    end
+    System_Boundary(render, "Render.com") {
+        Container(web, "App Principal", "Django 5 · Gunicorn · WhiteNoise", "Monolito SSR. Gerencia autenticação, transações, cartões e categorias.")
+        Container(api, "Microserviço de Relatórios", "FastAPI · Uvicorn", "Serviço isolado para geração de PDFs. Planejado.")
+    }
 
-    U        -- "HTTPS · navegador"           --> WEB
-    WEB      -- "REST · HTTP (delegação)"     --> API
-    WEB      -- "Django ORM · psycopg2"       --> DB
-    API      -- "SQL puro · psycopg2"         --> DB
+    SystemDb_Ext(db, "PostgreSQL", "Render Free DB", "Armazena usuários, transações, categorias e cartões.")
 
-    style U   fill:#08427B,color:#FFFFFF,stroke:#052E56
-    style WEB fill:#1168BD,color:#FFFFFF,stroke:#0B4884
-    style API fill:#1168BD,color:#FFFFFF,stroke:#0B4884
-    style DB  fill:#2D882D,color:#FFFFFF,stroke:#1B5E1B
+    Rel_D(user, web, "Navega", "HTTPS")
+    Rel_D(web, api, "Delega geração de PDF", "REST / HTTP")
+    Rel_D(web, db, "Consulta e persiste", "Django ORM")
+    Rel_D(api, db, "Agrega relatórios", "SQL")
+
+    UpdateElementStyle(user, $fontColor="white", $bgColor="#08427B", $borderColor="#052E56")
+    UpdateElementStyle(web,  $fontColor="white", $bgColor="#1168BD", $borderColor="#0B4884")
+    UpdateElementStyle(api,  $fontColor="white", $bgColor="#1168BD", $borderColor="#0B4884")
+    UpdateElementStyle(db,   $fontColor="white", $bgColor="#2D882D", $borderColor="#1B5E1B")
+    UpdateBoundaryStyle(render, $fontColor="white", $bgColor="#1a1a2e", $borderColor="#555555")
+    UpdateRelStyle(user, web, $textColor="white", $lineColor="#aaaaaa", $offsetX="-50", $offsetY="-10")
+    UpdateRelStyle(web, api,  $textColor="white", $lineColor="#aaaaaa", $offsetX="20",  $offsetY="-10")
+    UpdateRelStyle(web, db,   $textColor="white", $lineColor="#aaaaaa", $offsetX="-50", $offsetY="-10")
+    UpdateRelStyle(api, db,   $textColor="white", $lineColor="#aaaaaa", $offsetX="20",  $offsetY="-10")
 ```
 
 ---
 
-### Nível 3 — Componentes (App Django)
+### Nível 3: Componentes
 
 Estrutura interna do monolito Django, mapeando os arquivos reais do repositório.
 
 ```mermaid
-flowchart TD
-    REQ["🌐 Requisição HTTP\nnavegador do usuário"]
+C4Component
+    title Nível 3: Componentes do App Principal (financas/)
 
-    subgraph DJANGO["🐍  financas/  —  App Django"]
-        direction TB
-        AUTH["🔐 contrib.auth\n──────────────\n@login_required\nLoginRequiredMixin\nSessões isoladas por usuário"]
+    Person(user, "Usuário autenticado", "Interage com as páginas da aplicação")
 
-        VIEWS["📋 views.py\n──────────────\nFBV: dashboard · lista_transacoes\n      adicionar · editar · remover\nCBV: CartaoCredito(List·Create·Update·Delete)\n     Categoria(List·Create·Update·Delete)\nBase mixins: BaseCartaoCreditoView\n             BaseCategoriaView"]
-
-        FORMS["📝 forms.py\n──────────────\nTransacaoForm\n  └─ querysets filtrados por usuário\nCartaoCreditoForm\nCategoriaForm\n  └─ widgets com classes Tailwind"]
-
-        MODELS["🗂️ models.py\n──────────────\nTransacao\n  ├─ tipo: RECEITA · DESPESA\n  ├─ FK → Categoria (PROTECT)\n  └─ FK → CartaoCredito (CASCADE, nullable)\nCartaoCredito\n  └─ cor: BLUE·GREEN·RED·PURPLE\n         BLACK·ORANGE·GRAY\nCategoria\n  └─ unique_together: (usuario, nome)"]
-
-        TEMPLATES["🎨 templates/\n──────────────\nbase.html + includes/\n  head.html · navbar.html · scripts.html\nfinancas/\n  dashboard.html\n  lista_transacoes.html\n  adicionar_transacao.html\n  cartao_credito_*.html\n  categoria_*.html\n  confirm_delete.html\nregistration/login.html\n\nTailwindCSS · Alpine.js"]
-    end
-
-    DB[("🗄️ PostgreSQL")]
-
-    REQ    -- "verifica sessão"            --> AUTH
-    AUTH   -- "redireciona ou permite"     --> VIEWS
-    VIEWS  -- "valida dados POST"          --> FORMS
-    VIEWS  -- "queries filtradas\npor request.user" --> MODELS
-    VIEWS  -- "injeta contexto"            --> TEMPLATES
-    FORMS  -- "cria / atualiza instâncias" --> MODELS
-    MODELS -- "ORM · psycopg2"             --> DB
-
-    style AUTH      fill:#4A90D9,color:#FFFFFF,stroke:#2C6FAC
-    style VIEWS     fill:#1168BD,color:#FFFFFF,stroke:#0B4884
-    style FORMS     fill:#4A90D9,color:#FFFFFF,stroke:#2C6FAC
-    style MODELS    fill:#4A90D9,color:#FFFFFF,stroke:#2C6FAC
-    style TEMPLATES fill:#D4820A,color:#FFFFFF,stroke:#A0600A
-    style DB        fill:#2D882D,color:#FFFFFF,stroke:#1B5E1B
-```
-
----
-
-### Modelo de Dados (ER)
-
-Relacionamentos e campos das tabelas gerenciadas pelo Django ORM.
-
-```mermaid
-erDiagram
-    User ||--o{ Categoria      : "possui"
-    User ||--o{ CartaoCredito  : "possui"
-    User ||--o{ Transacao      : "registra"
-
-    Categoria     ||--o{ Transacao : "classifica (PROTECT)"
-    CartaoCredito |o--o{ Transacao : "vincula (CASCADE · opcional)"
-
-    Categoria {
-        int    id        PK
-        int    usuario   FK
-        string nome         "max_length=100 · unique por usuário"
+    Container_Boundary(web, "App Principal — financas/") {
+        Component(auth,      "Autenticação",  "contrib.auth",        "Decorators @login_required e LoginRequiredMixin. Isola dados por sessão.")
+        Component(views,     "Views",         "FBV + CBV · views.py","dashboard, lista_transacoes, adicionar, editar, remover. CBVs para CartaoCredito e Categoria.")
+        Component(forms,     "Formulários",   "Django Forms",        "TransacaoForm, CartaoCreditoForm e CategoriaForm. Querysets filtrados por usuário.")
+        Component(models,    "Modelos",       "Django ORM",          "Transacao, CartaoCredito e Categoria. Todos isolados por FK do usuário.")
+        Component(templates, "Templates",     "Tailwind · Alpine.js","base.html, dashboard, lista_transacoes, formulários e confirmações de exclusão.")
     }
 
-    CartaoCredito {
-        int     id             PK
-        int     usuario        FK
-        string  nome              "max_length=100"
-        decimal limite            "max_digits=10 · decimal_places=2"
-        int     dia_fechamento
-        int     dia_vencimento
-        string  cor               "BLUE|GREEN|RED|PURPLE|BLACK|ORANGE|GRAY"
-    }
+    SystemDb_Ext(db, "PostgreSQL", "Render Free DB")
 
-    Transacao {
-        int     id              PK
-        int     usuario         FK
-        int     categoria       FK  "on_delete=PROTECT"
-        int     cartao_credito  FK  "nullable · on_delete=CASCADE"
-        date    data
-        string  tipo               "RECEITA|DESPESA"
-        string  descricao          "max_length=200"
-        decimal valor              "max_digits=10 · decimal_places=2"
-        bool    fatura_paga        "default=False"
-    }
+    Rel_D(user,  auth,      "Requisição HTTP")
+    Rel_R(auth,  views,     "Permite acesso")
+    Rel_R(views, templates, "Renderiza resposta")
+    Rel_D(views, forms,     "Valida dados POST")
+    Rel_D(views, models,    "Consultas filtradas")
+    Rel_D(forms, models,    "Cria e atualiza")
+    Rel_D(models, db,       "ORM · psycopg2")
+
+    UpdateElementStyle(user,      $fontColor="white", $bgColor="#08427B", $borderColor="#052E56")
+    UpdateElementStyle(auth,      $fontColor="white", $bgColor="#4A90D9", $borderColor="#2C6FAC")
+    UpdateElementStyle(views,     $fontColor="white", $bgColor="#1168BD", $borderColor="#0B4884")
+    UpdateElementStyle(forms,     $fontColor="white", $bgColor="#4A90D9", $borderColor="#2C6FAC")
+    UpdateElementStyle(models,    $fontColor="white", $bgColor="#4A90D9", $borderColor="#2C6FAC")
+    UpdateElementStyle(templates, $fontColor="white", $bgColor="#D4820A", $borderColor="#A0600A")
+    UpdateElementStyle(db,        $fontColor="white", $bgColor="#2D882D", $borderColor="#1B5E1B")
+    UpdateBoundaryStyle(web, $fontColor="white", $bgColor="#1a1a2e", $borderColor="#555555")
+    UpdateRelStyle(user,   auth,      $textColor="white", $lineColor="#aaaaaa", $offsetY="-10")
+    UpdateRelStyle(auth,   views,     $textColor="white", $lineColor="#aaaaaa", $offsetY="-10")
+    UpdateRelStyle(views,  templates, $textColor="white", $lineColor="#aaaaaa", $offsetY="-10")
+    UpdateRelStyle(views,  forms,     $textColor="white", $lineColor="#aaaaaa", $offsetX="-40", $offsetY="-10")
+    UpdateRelStyle(views,  models,    $textColor="white", $lineColor="#aaaaaa", $offsetX="20",  $offsetY="-10")
+    UpdateRelStyle(forms,  models,    $textColor="white", $lineColor="#aaaaaa", $offsetY="-10")
+    UpdateRelStyle(models, db,        $textColor="white", $lineColor="#aaaaaa", $offsetY="-10")
 ```
 
 ---
