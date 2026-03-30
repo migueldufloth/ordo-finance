@@ -137,8 +137,7 @@
                     <td class="px-6 py-4 whitespace-nowrap text-right">
                         <div
                             class="text-lg font-bold {% if transacao.tipo == 'RECEITA' %}text-green-600{% else %}text-red-600{% endif %}">
-                            {% if transacao.tipo == 'DESPESA' %}- {% else %}+ {% endif %}R$ {{
-                            transacao.valor|floatformat:2 }}
+                            {% if transacao.tipo == 'DESPESA' %}- {% else %}+ {% endif %}R$ {{ transacao.valor|floatformat:2 }}
                         </div>
                     </td>
                 </tr>

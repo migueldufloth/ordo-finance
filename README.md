@@ -1,6 +1,6 @@
 # Ordo Finance
 
-Sistema de gestão financeira pessoal com arquitetura híbrida: monolito Django para o core da aplicação e microserviço FastAPI para relatórios. Totalmente containerizado via Docker e implantável no Render.com.
+Sistema de gestão financeira pessoal com arquitetura híbrida: monolito Django para o core da aplicação e microserviço FastAPI para relatórios. Totalmente containerizado via Docker e implantado na Oracle Cloud Always Free.
 
 ## Visão Geral
 
@@ -76,7 +76,7 @@ flowchart LR
     classDef boundary fill:transparent,stroke:#888,stroke-dasharray: 5 5,color:#ccc,font-weight:bold;
 
     User(["<b>👤 Usuário autenticado</b><br/><span style='font-size:12px; color:#ddd'>Interage com as páginas<br/>da aplicação</span>"]):::person
-    DB[("<b>🗄️ PostgreSQL</b><br/><span style='font-size:12px; color:#ddd'>Render Free DB</span>")]:::db
+    DB[("<b>🗄️ PostgreSQL</b><br/><span style='font-size:12px; color:#ddd'>Container · Oracle Cloud</span>")]:::db
 
     subgraph App ["📦 App Principal — financas/"]
         direction TB
@@ -127,7 +127,7 @@ erDiagram
     Categoria {
         int    id           PK
         int    usuario_id   FK
-        string nome            "max_length=100"
+        string nome            "max_length=100, unique por usuário"
     }
 
     CartaoCredito {
@@ -135,8 +135,8 @@ erDiagram
         int    usuario_id       FK
         string nome                "max_length=100"
         decimal limite             "max_digits=10, decimal_places=2"
-        int    dia_fechamento
-        int    dia_vencimento
+        int    dia_fechamento      "1–31"
+        int    dia_vencimento      "1–31"
         string cor                 "BLUE|GREEN|RED|PURPLE|BLACK|ORANGE|GRAY"
     }
 
@@ -154,6 +154,38 @@ erDiagram
 ```
 
 > **Regras de integridade:** deletar uma `Categoria` que possui transações é bloqueado (`PROTECT`). Deletar um `CartaoCredito` remove em cascata suas transações vinculadas (`CASCADE`). Deletar um `User` remove em cascata todos os seus dados.
+
+---
+
+## Rotas da Aplicação
+
+### Django (porta 8000)
+
+| Método | URL | Nome | Descrição |
+|--------|-----|------|-----------|
+| GET | `/` | `home` | Dashboard com saldo, resumo mensal e últimos lançamentos |
+| GET/POST | `/accounts/login/` | `login` | Login |
+| POST | `/accounts/logout/` | `logout` | Logout |
+| GET | `/transacoes/` | `lista_transacoes` | Lista paginada de transações (10/página) |
+| GET/POST | `/transacoes/adicionar/` | `adicionar_transacao` | Formulário de nova transação |
+| GET/POST | `/transacoes/<pk>/editar/` | `editar_transacao` | Editar transação existente |
+| GET/POST | `/transacoes/<pk>/remover/` | `remover_transacao` | Confirmar e remover transação |
+| GET | `/transacoes/cartoes/` | `cartao_credito_list` | Lista de cartões de crédito |
+| GET/POST | `/transacoes/cartoes/adicionar/` | `cartao_credito_create` | Novo cartão de crédito |
+| GET/POST | `/transacoes/cartoes/<pk>/editar/` | `cartao_credito_update` | Editar cartão |
+| GET/POST | `/transacoes/cartoes/<pk>/remover/` | `cartao_credito_delete` | Remover cartão |
+| GET | `/transacoes/categorias/` | `categoria_list` | Lista de categorias |
+| GET/POST | `/transacoes/categorias/adicionar/` | `categoria_create` | Nova categoria |
+| GET/POST | `/transacoes/categorias/<pk>/editar/` | `categoria_update` | Editar categoria |
+| GET/POST | `/transacoes/categorias/<pk>/remover/` | `categoria_delete` | Remover categoria |
+| GET | `/admin/` | — | Django Admin |
+
+### FastAPI (porta 8001) — em desenvolvimento
+
+| Método | URL | Descrição |
+|--------|-----|-----------|
+| GET | `/health` | Health check do microserviço |
+| GET | `/` | Status do serviço |
 
 ---
 
@@ -189,15 +221,79 @@ erDiagram
 |--------|------------|
 | Backend | Python 3.12 · Django 5.x · FastAPI |
 | Servidores | Gunicorn (Django) · Uvicorn (FastAPI) · WhiteNoise + Brotli (assets) |
-| Frontend | Django Templates · TailwindCSS · Alpine.js |
-| Banco de Dados | PostgreSQL · psycopg2 · dj-database-url |
+| Frontend | Django Templates · TailwindCSS · Alpine.js · Lucide Icons |
+| Banco de Dados | PostgreSQL 15 · psycopg2 · dj-database-url |
 | Infraestrutura | Docker · Docker Compose · Oracle Cloud Always Free |
+
+---
+
+## Variáveis de Ambiente
+
+O projeto usa um arquivo `.env` na raiz. Abaixo todas as variáveis suportadas:
+
+| Variável | Obrigatória em Prod | Padrão | Descrição |
+|----------|--------------------:|--------|-----------|
+| `SECRET_KEY` | Sim | insecure key | Chave secreta do Django |
+| `DEBUG` | — | `False` | Ativar modo debug (`True` apenas local) |
+| `ALLOWED_HOSTS` | Sim | `localhost,127.0.0.1` | Hosts permitidos, separados por vírgula |
+| `DATABASE_URL` | Sim | SQLite local | URL de conexão do banco (`postgres://user:pass@host:port/db`) |
+| `POSTGRES_DB` | Sim (Docker) | `ordo` | Nome do banco (usado pelo container PostgreSQL) |
+| `POSTGRES_USER` | Sim (Docker) | `postgres` | Usuário do banco |
+| `POSTGRES_PASSWORD` | Sim (Docker) | — | Senha do banco |
+
+**Exemplo de `.env` para desenvolvimento local (sem Docker):**
+
+```env
+DEBUG=True
+SECRET_KEY=qualquer-chave-local
+ALLOWED_HOSTS=localhost,127.0.0.1
+# Sem DATABASE_URL → usa SQLite automático
+```
+
+**Exemplo de `.env` para produção (Oracle Cloud):**
+
+```env
+DEBUG=False
+SECRET_KEY=chave-secreta-longa-e-aleatoria
+ALLOWED_HOSTS=<IP_DA_VM>,seu-dominio.com
+POSTGRES_DB=ordo
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=senha-forte-aqui
+```
+
+> Em produção, `DATABASE_URL` é montado automaticamente pelo `docker-compose.prod.yml` a partir das variáveis `POSTGRES_*` — não precisa definir manualmente.
+
+---
+
+## Execução Local (sem Docker)
+
+```bash
+# Criar e ativar virtualenv
+python -m venv venv
+source venv/bin/activate       # Windows: venv\Scripts\activate
+
+# Instalar dependências
+pip install -r requirements.txt
+
+# Criar o .env (sem DATABASE_URL usa SQLite automaticamente)
+echo "DEBUG=True" > .env
+echo "SECRET_KEY=dev-secret" >> .env
+
+# Aplicar migrations e criar superusuário
+python manage.py migrate
+python manage.py createsuperuser
+
+# Rodar
+python manage.py runserver
+```
+
+Acesse em `http://localhost:8000`.
 
 ---
 
 ## Deploy na Oracle Cloud (Always Free)
 
-Toda a aplicação sobe via `docker-compose.prod.yml` em uma VM gratuita e permanente da Oracle Cloud. O banco de dados roda como container com volume persistente — sem serviços externos.
+Toda a aplicação sobe via `docker-compose.prod.yml` em uma VM gratuita e permanente da Oracle Cloud. O banco de dados roda como container com volume persistente — sem serviços externos pagos.
 
 ### 1. Criar a VM na Oracle Cloud
 
@@ -245,58 +341,83 @@ sudo netfilter-persistent save
 ```bash
 # Clonar o repositório
 git clone <URL_DO_REPO>
-cd ordo-finance
+cd ordo_django
 
 # Criar o arquivo de variáveis de ambiente
 cat > .env <<EOF
+DEBUG=False
+SECRET_KEY=sua-chave-secreta-longa
+ALLOWED_HOSTS=<IP_DA_VM>
 POSTGRES_DB=ordo
 POSTGRES_USER=postgres
-POSTGRES_PASSWORD=suasenhaforte
-SECRET_KEY=suachavesecreta
-ALLOWED_HOSTS=*
+POSTGRES_PASSWORD=senha-forte-aqui
 EOF
 
-# Subir todos os containers (DB + Django + FastAPI)
+# Build e subida de todos os containers (PostgreSQL + Django + FastAPI)
 docker compose -f docker-compose.prod.yml up -d --build
+
+# Criar superusuário (primeira vez)
+docker compose -f docker-compose.prod.yml exec web python manage.py createsuperuser
 ```
 
 A aplicação estará disponível em `http://<IP_DA_VM>:8000`.
 
+### 4. Comportamento do Entrypoint
+
+Ao subir, o container `web` executa automaticamente via `entrypoint.sh`:
+
+1. `python manage.py migrate --noinput` — aplica migrations pendentes
+2. `python manage.py collectstatic --noinput` — coleta arquivos estáticos para WhiteNoise
+3. `gunicorn ordo_project.wsgi:application --bind 0.0.0.0:8000 --workers 3` — sobe o servidor com 3 workers
+
+O container `web` só sobe após o `db` passar no health check (`pg_isready`), evitando falhas de conexão na inicialização.
+
 ### Comandos Úteis
 
 ```bash
-docker compose -f docker-compose.prod.yml logs -f          # Ver logs
-docker compose -f docker-compose.prod.yml ps               # Status dos containers
+# Ver logs em tempo real
+docker compose -f docker-compose.prod.yml logs -f
+
+# Status dos containers
+docker compose -f docker-compose.prod.yml ps
+
+# Criar superusuário
 docker compose -f docker-compose.prod.yml exec web python manage.py createsuperuser
-docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d --build  # Atualizar
+
+# Atualizar para nova versão
+git pull
+docker compose -f docker-compose.prod.yml up -d --build
+
+# Acessar shell do Django
+docker compose -f docker-compose.prod.yml exec web python manage.py shell
+
+# Backup do banco de dados
+docker compose -f docker-compose.prod.yml exec db pg_dump -U postgres ordo > backup.sql
 ```
 
 ---
 
-## Execução Local
+## Estrutura do Projeto
 
-### Via Docker Compose (recomendado)
-
-```bash
-docker-compose up --build
 ```
-
-Serviços disponíveis:
-
-| Serviço | URL |
-|---------|-----|
-| Django (app principal) | http://localhost:8000 |
-| FastAPI (microserviço) | http://localhost:8001 |
-| PostgreSQL | localhost:5432 |
-
-### Sem Docker
-
-```bash
-python -m venv venv
-source venv/bin/activate       # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-# configure DATABASE_URL no .env ou exporte a variável
-python manage.py migrate
-python manage.py createsuperuser
-python manage.py runserver
+ordo_django/
+├── api/                        # Microserviço FastAPI (relatórios)
+│   ├── main.py                 # Endpoints FastAPI
+│   ├── requirements.txt
+│   └── Dockerfile
+├── financas/                   # App Django principal
+│   ├── models.py               # Transacao, CartaoCredito, Categoria
+│   ├── views.py                # FBVs + CBVs
+│   ├── forms.py                # TransacaoForm, CartaoCreditoForm, CategoriaForm
+│   ├── urls.py                 # Rotas do app
+│   └── templates/financas/     # Templates HTML
+├── ordo_project/
+│   ├── settings.py             # Configurações (dj-database-url, WhiteNoise)
+│   ├── urls.py                 # Roteador raiz
+│   └── wsgi.py
+├── docker-compose.yml          # Ambiente de desenvolvimento local
+├── docker-compose.prod.yml     # Ambiente de produção (Oracle Cloud)
+├── Dockerfile                  # Imagem do container Django
+├── entrypoint.sh               # migrate + collectstatic + gunicorn
+└── requirements.txt
 ```
