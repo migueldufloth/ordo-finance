@@ -15,21 +15,19 @@ A aplicação permite controle de receitas e despesas, categorização de lança
 Visão de alto nível: quem usa o sistema e com o que ele se comunica.
 
 ```mermaid
-C4Context
-    title Nível 1: Contexto do Sistema
+flowchart TD
+    classDef person fill:#08427B,stroke:#66B2FF,stroke-width:2px,color:#fff;
+    classDef system fill:#1168BD,stroke:#66B2FF,stroke-width:2px,color:#fff;
+    classDef db fill:#2D882D,stroke:#55FF55,stroke-width:2px,color:#fff;
 
-    Person(user, "Usuário", "Controla receitas, despesas e cartões de crédito pelo navegador")
-    System(ordo, "Ordo Finance", "Aplicação web de gestão financeira pessoal hospedada no Render.com via Docker")
-    SystemDb_Ext(db, "PostgreSQL", "Banco de dados relacional no Render Free Tier")
+    User(["<b>👤 Usuário</b><br/><span style='font-size:12px; color:#ddd'>Controla receitas, despesas e cartões<br/>de crédito pelo navegador</span>"]):::person
+    Ordo["<b>⚙️ Ordo Finance</b><br/><span style='font-size:12px; color:#ddd'>Aplicação web de gestão financeira pessoal<br/>hospedada na Oracle Cloud via Docker Compose</span>"]:::system
+    DB[("<b>🗄️ PostgreSQL</b><br/><span style='font-size:12px; color:#ddd'>Banco de dados em container<br/>com volume persistente</span>")]:::db
 
-    Rel_D(user, ordo, "Acessa via HTTPS")
-    Rel_D(ordo, db, "Lê e grava dados")
+    User -- "Acessa via HTTPS" --> Ordo
+    Ordo -- "Lê e grava dados" --> DB
 
-    UpdateElementStyle(user, $fontColor="white", $bgColor="#08427B", $borderColor="#052E56")
-    UpdateElementStyle(ordo, $fontColor="white", $bgColor="#1168BD", $borderColor="#0B4884")
-    UpdateElementStyle(db,   $fontColor="white", $bgColor="#2D882D", $borderColor="#1B5E1B")
-    UpdateRelStyle(user, ordo, $textColor="white", $lineColor="#aaaaaa")
-    UpdateRelStyle(ordo, db,   $textColor="white", $lineColor="#aaaaaa")
+    linkStyle default stroke:#66B2FF,stroke-width:2px,color:#E0E0E0,font-size:13px;
 ```
 
 ---
@@ -39,31 +37,28 @@ C4Context
 Decomposição dos serviços que compõem o sistema em produção.
 
 ```mermaid
-C4Container
-    title Nível 2: Containers
+flowchart LR
+    classDef person fill:#08427B,stroke:#66B2FF,stroke-width:2px,color:#fff;
+    classDef container fill:#1168BD,stroke:#66B2FF,stroke-width:2px,color:#fff;
+    classDef db fill:#2D882D,stroke:#55FF55,stroke-width:2px,color:#fff;
+    classDef boundary fill:transparent,stroke:#888,stroke-dasharray: 5 5,color:#ccc,font-weight:bold;
 
-    Person(user, "Usuário", "Acessa a interface web pelo navegador")
+    User(["<b>👤 Usuário</b><br/><span style='font-size:12px; color:#ddd'>Acessa a interface web<br/>pelo navegador</span>"]):::person
 
-    System_Boundary(render, "Render.com") {
-        Container(web, "App Principal", "Django 5 · Gunicorn · WhiteNoise", "Monolito SSR. Gerencia autenticação, transações, cartões e categorias.")
-        Container(api, "Microserviço de Relatórios", "FastAPI · Uvicorn", "Serviço isolado para geração de PDFs. Planejado.")
-    }
+    subgraph Oracle ["☁️ Oracle Cloud — Always Free VM"]
+        direction TB
+        Web["<b>🖥️ App Principal</b><br/><span style='font-size:12px; color:#99CCFF'>[Django 5 · Gunicorn · WhiteNoise]</span><br/><span style='font-size:12px; color:#ddd'>Monolito SSR. Gerencia autenticação,<br/>transações, cartões e categorias.</span>"]:::container
+        API["<b>⚙️ Microserviço de Relatórios</b><br/><span style='font-size:12px; color:#99CCFF'>[FastAPI · Uvicorn]</span><br/><span style='font-size:12px; color:#ddd'>Serviço isolado para geração<br/>de PDFs. Planejado.</span>"]:::container
+        DB[("<b>🗄️ PostgreSQL</b><br/><span style='font-size:12px; color:#99CCFF'>[Container · Volume Persistente]</span><br/><span style='font-size:12px; color:#ddd'>Armazena usuários, transações,<br/>categorias e cartões.</span>")]:::db
+        Web -- "Delega geração de PDF<br/>[REST / HTTP]" --> API
+        Web -- "Consulta e persiste<br/>[Django ORM]" --> DB
+        API -- "Agrega relatórios [SQL]" --> DB
+    end
+    class Oracle boundary;
 
-    SystemDb_Ext(db, "PostgreSQL", "Render Free DB", "Armazena usuários, transações, categorias e cartões.")
+    User -- "Navega [HTTPS]" --> Web
 
-    Rel_D(user, web, "Navega", "HTTPS")
-    Rel_D(web, api, "Delega geração de PDF", "REST / HTTP")
-    Rel_D(web, db, "Consulta e persiste", "Django ORM")
-    Rel_D(api, db, "Agrega relatórios", "SQL")
-
-    UpdateElementStyle(user, $fontColor="white", $bgColor="#08427B", $borderColor="#052E56")
-    UpdateElementStyle(web,  $fontColor="white", $bgColor="#1168BD", $borderColor="#0B4884")
-    UpdateElementStyle(api,  $fontColor="white", $bgColor="#1168BD", $borderColor="#0B4884")
-    UpdateElementStyle(db,   $fontColor="white", $bgColor="#2D882D", $borderColor="#1B5E1B")
-    UpdateRelStyle(user, web, $textColor="white", $lineColor="#aaaaaa")
-    UpdateRelStyle(web, api,  $textColor="white", $lineColor="#aaaaaa")
-    UpdateRelStyle(web, db,   $textColor="white", $lineColor="#aaaaaa")
-    UpdateRelStyle(api, db,   $textColor="white", $lineColor="#aaaaaa")
+    linkStyle default stroke:#66B2FF,stroke-width:2px,color:#E0E0E0,font-size:13px;
 ```
 
 ---
@@ -73,44 +68,92 @@ C4Container
 Estrutura interna do monolito Django, mapeando os arquivos reais do repositório.
 
 ```mermaid
-C4Component
-    title Nível 3: Componentes do App Principal (financas/)
+flowchart LR
+    classDef person fill:#08427B,stroke:#66B2FF,stroke-width:2px,color:#fff;
+    classDef comp fill:#4A90D9,stroke:#99CCFF,stroke-width:2px,color:#fff;
+    classDef compAlt fill:#D4820A,stroke:#FFB266,stroke-width:2px,color:#fff;
+    classDef db fill:#2D882D,stroke:#55FF55,stroke-width:2px,color:#fff;
+    classDef boundary fill:transparent,stroke:#888,stroke-dasharray: 5 5,color:#ccc,font-weight:bold;
 
-    Person(user, "Usuário autenticado", "Interage com as páginas da aplicação")
+    User(["<b>👤 Usuário autenticado</b><br/><span style='font-size:12px; color:#ddd'>Interage com as páginas<br/>da aplicação</span>"]):::person
+    DB[("<b>🗄️ PostgreSQL</b><br/><span style='font-size:12px; color:#ddd'>Render Free DB</span>")]:::db
 
-    Container_Boundary(django, "App Principal — financas/") {
-        Component(auth,      "Autenticação",  "contrib.auth",        "Decorators @login_required e LoginRequiredMixin. Isola sessão por usuário.")
-        Component(views,     "Views",         "FBV + CBV · views.py","dashboard, lista_transacoes, adicionar, editar, remover. CBVs para CartaoCredito e Categoria.")
-        Component(forms,     "Formulários",   "Django Forms",        "TransacaoForm, CartaoCreditoForm e CategoriaForm. Querysets filtrados por usuário.")
-        Component(models,    "Modelos",       "Django ORM",          "Transacao, CartaoCredito e Categoria. Todos isolados por FK do usuário.")
-        Component(templates, "Templates",     "Tailwind · Alpine.js","base.html, dashboard, lista_transacoes e formulários de CRUD.")
+    subgraph App ["📦 App Principal — financas/"]
+        direction TB
+        Auth["<b>🔐 Autenticação</b><br/><span style='font-size:12px; color:#cce5ff'>[contrib.auth]</span><br/><span style='font-size:12px; color:#eee'>Decorators @login_required e<br/>LoginRequiredMixin. Isola<br/>sessão por usuário.</span>"]:::comp
+        Views["<b>🎛️ Views</b><br/><span style='font-size:12px; color:#cce5ff'>[FBV + CBV · views.py]</span><br/><span style='font-size:12px; color:#eee'>dashboard, lista_transacoes, adicionar,<br/>editar, remover. CBVs para<br/>CartaoCredito e Categoria.</span>"]:::comp
+        Forms["<b>📝 Formulários</b><br/><span style='font-size:12px; color:#cce5ff'>[Django Forms]</span><br/><span style='font-size:12px; color:#eee'>TransacaoForm, CartaoCreditoForm<br/>e CategoriaForm. Querysets<br/>filtrados por usuário.</span>"]:::comp
+        Templates["<b>🎨 Templates</b><br/><span style='font-size:12px; color:#ffe6cc'>[Tailwind · Alpine.js]</span><br/><span style='font-size:12px; color:#eee'>base.html, dashboard, lista_transacoes<br/>e formulários de CRUD.</span>"]:::compAlt
+        Models["<b>📊 Modelos</b><br/><span style='font-size:12px; color:#cce5ff'>[Django ORM]</span><br/><span style='font-size:12px; color:#eee'>Transacao, CartaoCredito e Categoria.<br/>Todos isolados por FK do usuário.</span>"]:::comp
+
+        Auth  -- "Permite acesso"  --> Views
+        Views -- "Valida POST"     --> Forms
+        Views -- "Renderiza HTML"  --> Templates
+        Views -- "Consulta dados"  --> Models
+        Forms -- "Cria e atualiza" --> Models
+    end
+    class App boundary;
+
+    User   -- "Requisição HTTP"  --> Auth
+    Models -- "ORM · psycopg2"   --> DB
+
+    linkStyle default stroke:#66B2FF,stroke-width:2px,color:#E0E0E0,font-size:13px;
+```
+
+---
+
+### Modelo de Dados (ER)
+
+Estrutura completa das tabelas gerenciadas pelo Django ORM, com todos os campos, tipos e relacionamentos.
+
+```mermaid
+%%{init: {'theme': 'dark', 'themeVariables': { 'fontSize': '16px', 'primaryColor': '#1168BD', 'primaryBorderColor': '#66B2FF', 'lineColor': '#66B2FF', 'fontFamily': 'sans-serif'}}}%%
+erDiagram
+    User ||--o{ Categoria     : "possui"
+    User ||--o{ CartaoCredito : "possui"
+    User ||--o{ Transacao     : "registra"
+
+    Categoria     ||--o{ Transacao : "classifica"
+    CartaoCredito |o--o{ Transacao : "vincula (opcional)"
+
+    User {
+        int    id           PK
+        string username
+        string email
+        string password        "hash"
+        bool   is_active
     }
 
-    SystemDb_Ext(db, "PostgreSQL", "Render Free DB")
+    Categoria {
+        int    id           PK
+        int    usuario_id   FK
+        string nome            "max_length=100"
+    }
 
-    Rel_D(user,      auth,      "Requisição HTTP")
-    Rel_D(auth,      views,     "Permite acesso")
-    Rel_D(views,     forms,     "Valida POST")
-    Rel_D(views,     models,    "Consulta dados")
-    Rel_D(views,     templates, "Renderiza HTML")
-    Rel_D(forms,     models,    "Cria e atualiza")
-    Rel_D(models,    db,        "ORM · psycopg2")
+    CartaoCredito {
+        int    id               PK
+        int    usuario_id       FK
+        string nome                "max_length=100"
+        decimal limite             "max_digits=10, decimal_places=2"
+        int    dia_fechamento
+        int    dia_vencimento
+        string cor                 "BLUE|GREEN|RED|PURPLE|BLACK|ORANGE|GRAY"
+    }
 
-    UpdateElementStyle(user,      $fontColor="white", $bgColor="#08427B", $borderColor="#052E56")
-    UpdateElementStyle(auth,      $fontColor="white", $bgColor="#4A90D9", $borderColor="#2C6FAC")
-    UpdateElementStyle(views,     $fontColor="white", $bgColor="#1168BD", $borderColor="#0B4884")
-    UpdateElementStyle(forms,     $fontColor="white", $bgColor="#4A90D9", $borderColor="#2C6FAC")
-    UpdateElementStyle(models,    $fontColor="white", $bgColor="#4A90D9", $borderColor="#2C6FAC")
-    UpdateElementStyle(templates, $fontColor="white", $bgColor="#D4820A", $borderColor="#A0600A")
-    UpdateElementStyle(db,        $fontColor="white", $bgColor="#2D882D", $borderColor="#1B5E1B")
-    UpdateRelStyle(user,      auth,      $textColor="white", $lineColor="#aaaaaa")
-    UpdateRelStyle(auth,      views,     $textColor="white", $lineColor="#aaaaaa")
-    UpdateRelStyle(views,     forms,     $textColor="white", $lineColor="#aaaaaa")
-    UpdateRelStyle(views,     models,    $textColor="white", $lineColor="#aaaaaa")
-    UpdateRelStyle(views,     templates, $textColor="white", $lineColor="#aaaaaa")
-    UpdateRelStyle(forms,     models,    $textColor="white", $lineColor="#aaaaaa")
-    UpdateRelStyle(models,    db,        $textColor="white", $lineColor="#aaaaaa")
+    Transacao {
+        int    id                   PK
+        int    usuario_id           FK
+        int    categoria_id         FK  "on_delete=PROTECT"
+        int    cartao_credito_id    FK  "nullable, on_delete=CASCADE"
+        date   data
+        string tipo                   "RECEITA|DESPESA"
+        string descricao              "max_length=200"
+        decimal valor                 "max_digits=10, decimal_places=2"
+        bool   fatura_paga            "default=False"
+    }
 ```
+
+> **Regras de integridade:** deletar uma `Categoria` que possui transações é bloqueado (`PROTECT`). Deletar um `CartaoCredito` remove em cascata suas transações vinculadas (`CASCADE`). Deletar um `User` remove em cascata todos os seus dados.
 
 ---
 
@@ -148,31 +191,85 @@ C4Component
 | Servidores | Gunicorn (Django) · Uvicorn (FastAPI) · WhiteNoise + Brotli (assets) |
 | Frontend | Django Templates · TailwindCSS · Alpine.js |
 | Banco de Dados | PostgreSQL · psycopg2 · dj-database-url |
-| Infraestrutura | Docker · Docker Compose · Render.com |
+| Infraestrutura | Docker · Docker Compose · Oracle Cloud Always Free |
 
 ---
 
-## Deploy no Render.com (Free Tier)
+## Deploy na Oracle Cloud (Always Free)
 
-O projeto está **100% pronto** para deploy no Render. O `entrypoint.sh` executa automaticamente as migrations, coleta os arquivos estáticos e inicia o Gunicorn.
+Toda a aplicação sobe via `docker-compose.prod.yml` em uma VM gratuita e permanente da Oracle Cloud. O banco de dados roda como container com volume persistente — sem serviços externos.
 
-### Passo a Passo
+### 1. Criar a VM na Oracle Cloud
 
-1. Acesse [render.com](https://render.com) e crie um **PostgreSQL** gratuito. Copie a *Internal Database URL*.
-2. Crie um novo **Web Service** e vincule este repositório.
-3. Em *Settings*, selecione **Docker** como ambiente de build.
-4. Configure as variáveis de ambiente:
+1. Acesse [cloud.oracle.com](https://cloud.oracle.com) e crie uma conta (Always Free não exige cartão de crédito em uso).
+2. Crie uma **Compute Instance** com as configurações Always Free:
+   - Shape: `VM.Standard.A1.Flex` (ARM) — até 4 OCPUs e 24 GB RAM, ou `VM.Standard.E2.1.Micro` (AMD)
+   - Imagem: **Ubuntu 22.04**
+3. Salve a chave SSH gerada e anote o IP público da VM.
 
-   | Variável | Valor |
-   |----------|-------|
-   | `DATABASE_URL` | URL interna do PostgreSQL criado no passo 1 |
-   | `SECRET_KEY` | Hash aleatório e seguro |
-   | `DEBUG` | `False` |
-   | `ALLOWED_HOSTS` | `*` ou seu domínio |
+### 2. Configurar a VM
 
-5. Clique em **Deploy**. Em alguns minutos a aplicação estará disponível em `https://seu-servico.onrender.com`.
+Conecte via SSH e instale Docker:
 
-> **Atenção:** No free tier, o web service dorme após 15 minutos de inatividade e leva ~30s para acordar. O PostgreSQL gratuito expira em 90 dias.
+```bash
+ssh ubuntu@<IP_DA_VM>
+
+# Instalar Docker
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker ubuntu
+newgrp docker
+
+# Instalar Docker Compose plugin
+sudo apt-get install -y docker-compose-plugin
+docker compose version
+```
+
+Libere as portas no Security List da Oracle (VCN → Security Lists → Ingress Rules):
+
+| Porta | Protocolo | Origem |
+|-------|-----------|--------|
+| 22    | TCP       | 0.0.0.0/0 (SSH) |
+| 8000  | TCP       | 0.0.0.0/0 (Django) |
+| 8001  | TCP       | 0.0.0.0/0 (FastAPI) |
+
+E no firewall da própria VM:
+
+```bash
+sudo iptables -I INPUT -p tcp --dport 8000 -j ACCEPT
+sudo iptables -I INPUT -p tcp --dport 8001 -j ACCEPT
+sudo netfilter-persistent save
+```
+
+### 3. Subir a Aplicação
+
+```bash
+# Clonar o repositório
+git clone <URL_DO_REPO>
+cd ordo-finance
+
+# Criar o arquivo de variáveis de ambiente
+cat > .env <<EOF
+POSTGRES_DB=ordo
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=suasenhaforte
+SECRET_KEY=suachavesecreta
+ALLOWED_HOSTS=*
+EOF
+
+# Subir todos os containers (DB + Django + FastAPI)
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+A aplicação estará disponível em `http://<IP_DA_VM>:8000`.
+
+### Comandos Úteis
+
+```bash
+docker compose -f docker-compose.prod.yml logs -f          # Ver logs
+docker compose -f docker-compose.prod.yml ps               # Status dos containers
+docker compose -f docker-compose.prod.yml exec web python manage.py createsuperuser
+docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d --build  # Atualizar
+```
 
 ---
 
