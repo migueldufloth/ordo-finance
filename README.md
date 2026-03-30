@@ -28,8 +28,8 @@ C4Context
     UpdateElementStyle(user, $fontColor="white", $bgColor="#08427B", $borderColor="#052E56")
     UpdateElementStyle(ordo, $fontColor="white", $bgColor="#1168BD", $borderColor="#0B4884")
     UpdateElementStyle(db,   $fontColor="white", $bgColor="#2D882D", $borderColor="#1B5E1B")
-    UpdateRelStyle(user, ordo, $textColor="white", $lineColor="#aaaaaa", $offsetY="-10")
-    UpdateRelStyle(ordo, db,   $textColor="white", $lineColor="#aaaaaa", $offsetY="-10")
+    UpdateRelStyle(user, ordo, $textColor="white", $lineColor="#aaaaaa")
+    UpdateRelStyle(ordo, db,   $textColor="white", $lineColor="#aaaaaa")
 ```
 
 ---
@@ -60,11 +60,10 @@ C4Container
     UpdateElementStyle(web,  $fontColor="white", $bgColor="#1168BD", $borderColor="#0B4884")
     UpdateElementStyle(api,  $fontColor="white", $bgColor="#1168BD", $borderColor="#0B4884")
     UpdateElementStyle(db,   $fontColor="white", $bgColor="#2D882D", $borderColor="#1B5E1B")
-    UpdateBoundaryStyle(render, $fontColor="white", $bgColor="#1a1a2e", $borderColor="#555555")
-    UpdateRelStyle(user, web, $textColor="white", $lineColor="#aaaaaa", $offsetX="-50", $offsetY="-10")
-    UpdateRelStyle(web, api,  $textColor="white", $lineColor="#aaaaaa", $offsetX="20",  $offsetY="-10")
-    UpdateRelStyle(web, db,   $textColor="white", $lineColor="#aaaaaa", $offsetX="-50", $offsetY="-10")
-    UpdateRelStyle(api, db,   $textColor="white", $lineColor="#aaaaaa", $offsetX="20",  $offsetY="-10")
+    UpdateRelStyle(user, web, $textColor="white", $lineColor="#aaaaaa")
+    UpdateRelStyle(web, api,  $textColor="white", $lineColor="#aaaaaa")
+    UpdateRelStyle(web, db,   $textColor="white", $lineColor="#aaaaaa")
+    UpdateRelStyle(api, db,   $textColor="white", $lineColor="#aaaaaa")
 ```
 
 ---
@@ -79,23 +78,23 @@ C4Component
 
     Person(user, "Usuário autenticado", "Interage com as páginas da aplicação")
 
-    Container_Boundary(web, "App Principal — financas/") {
-        Component(auth,      "Autenticação",  "contrib.auth",        "Decorators @login_required e LoginRequiredMixin. Isola dados por sessão.")
+    Container_Boundary(django, "App Principal — financas/") {
+        Component(auth,      "Autenticação",  "contrib.auth",        "Decorators @login_required e LoginRequiredMixin. Isola sessão por usuário.")
         Component(views,     "Views",         "FBV + CBV · views.py","dashboard, lista_transacoes, adicionar, editar, remover. CBVs para CartaoCredito e Categoria.")
         Component(forms,     "Formulários",   "Django Forms",        "TransacaoForm, CartaoCreditoForm e CategoriaForm. Querysets filtrados por usuário.")
         Component(models,    "Modelos",       "Django ORM",          "Transacao, CartaoCredito e Categoria. Todos isolados por FK do usuário.")
-        Component(templates, "Templates",     "Tailwind · Alpine.js","base.html, dashboard, lista_transacoes, formulários e confirmações de exclusão.")
+        Component(templates, "Templates",     "Tailwind · Alpine.js","base.html, dashboard, lista_transacoes e formulários de CRUD.")
     }
 
     SystemDb_Ext(db, "PostgreSQL", "Render Free DB")
 
-    Rel_D(user,  auth,      "Requisição HTTP")
-    Rel_R(auth,  views,     "Permite acesso")
-    Rel_R(views, templates, "Renderiza resposta")
-    Rel_D(views, forms,     "Valida dados POST")
-    Rel_D(views, models,    "Consultas filtradas")
-    Rel_D(forms, models,    "Cria e atualiza")
-    Rel_D(models, db,       "ORM · psycopg2")
+    Rel_D(user,      auth,      "Requisição HTTP")
+    Rel_D(auth,      views,     "Permite acesso")
+    Rel_D(views,     forms,     "Valida POST")
+    Rel_D(views,     models,    "Consulta dados")
+    Rel_D(views,     templates, "Renderiza HTML")
+    Rel_D(forms,     models,    "Cria e atualiza")
+    Rel_D(models,    db,        "ORM · psycopg2")
 
     UpdateElementStyle(user,      $fontColor="white", $bgColor="#08427B", $borderColor="#052E56")
     UpdateElementStyle(auth,      $fontColor="white", $bgColor="#4A90D9", $borderColor="#2C6FAC")
@@ -104,14 +103,13 @@ C4Component
     UpdateElementStyle(models,    $fontColor="white", $bgColor="#4A90D9", $borderColor="#2C6FAC")
     UpdateElementStyle(templates, $fontColor="white", $bgColor="#D4820A", $borderColor="#A0600A")
     UpdateElementStyle(db,        $fontColor="white", $bgColor="#2D882D", $borderColor="#1B5E1B")
-    UpdateBoundaryStyle(web, $fontColor="white", $bgColor="#1a1a2e", $borderColor="#555555")
-    UpdateRelStyle(user,   auth,      $textColor="white", $lineColor="#aaaaaa", $offsetY="-10")
-    UpdateRelStyle(auth,   views,     $textColor="white", $lineColor="#aaaaaa", $offsetY="-10")
-    UpdateRelStyle(views,  templates, $textColor="white", $lineColor="#aaaaaa", $offsetY="-10")
-    UpdateRelStyle(views,  forms,     $textColor="white", $lineColor="#aaaaaa", $offsetX="-40", $offsetY="-10")
-    UpdateRelStyle(views,  models,    $textColor="white", $lineColor="#aaaaaa", $offsetX="20",  $offsetY="-10")
-    UpdateRelStyle(forms,  models,    $textColor="white", $lineColor="#aaaaaa", $offsetY="-10")
-    UpdateRelStyle(models, db,        $textColor="white", $lineColor="#aaaaaa", $offsetY="-10")
+    UpdateRelStyle(user,      auth,      $textColor="white", $lineColor="#aaaaaa")
+    UpdateRelStyle(auth,      views,     $textColor="white", $lineColor="#aaaaaa")
+    UpdateRelStyle(views,     forms,     $textColor="white", $lineColor="#aaaaaa")
+    UpdateRelStyle(views,     models,    $textColor="white", $lineColor="#aaaaaa")
+    UpdateRelStyle(views,     templates, $textColor="white", $lineColor="#aaaaaa")
+    UpdateRelStyle(forms,     models,    $textColor="white", $lineColor="#aaaaaa")
+    UpdateRelStyle(models,    db,        $textColor="white", $lineColor="#aaaaaa")
 ```
 
 ---
