@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /d/Desenvolvimento/ordo-finance -maxdepth 2 -type f -name *.md -o -name Makefile -o -name docker-compose.yml -o -name manage.py -o -name pyproject.toml -o -name requirements*.txt)"
+    ]
+  }
+}

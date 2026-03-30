@@ -1,175 +1,237 @@
 # Ordo Finance
 
-Sistema de gestão financeira pessoal desenvolvido com foco em arquitetura orientada a serviços e escalabilidade.
+Sistema de gestão financeira pessoal com arquitetura híbrida: monolito Django para o core da aplicação e microserviço FastAPI para relatórios. Totalmente containerizado via Docker e implantável no Render.com.
 
 ## Visão Geral
 
-A aplicação permite o controle de receitas e despesas, categorização de lançamentos e visualização de balanços financeiros. O projeto foi estruturado para demonstrar a coexistência de um monolito robusto (Django) conectado a um banco de dados na nuvem (PostgreSQL) com microserviços especializados (FastAPI), utilizando conteinerização para orquestração do ambiente.
+A aplicação permite controle de receitas e despesas, categorização de lançamentos, gerenciamento de cartões de crédito e visualização de balanços financeiros. O projeto demonstra a coexistência de um monolito robusto (Django + Gunicorn) com um microserviço especializado (FastAPI + Uvicorn), utilizando conteinerização Docker para orquestração dos ambientes de desenvolvimento e produção.
 
-## Estrutura de Produção e Arquitetura do Sistema
+---
 
-O sistema é composto de serviços dockerizados independentes para facilitar o *deploy* em plataformas na nuvem como **Render.com** ou **Railway**.
+## Arquitetura do Sistema
 
-*   **App Principal (Django Monolito):** Responsável pelo gerenciamento de usuários, regras de negócio principais e renderização da interface. Em produção, ele opera atrás do **Gunicorn** (multi-workers) e gerencia ativos estáticos através do **WhiteNoise**, impulsionado por um `entrypoint.sh` seguro que realiza as rotinas de banco.
-*   **Microserviço (FastAPI):** Unidade focada no isolamento de tarefas intensivas, executado assincronamente através do servidor **Uvicorn**, comunicando-se com o Core via API HTTP.
-*   **Banco de Dados (PostgreSQL - Supabase):** Armazenamento relacional centralizado servido como PaaS gratuito.
+### Nível 1 — Contexto
 
-## Arquitetura C4
-
-Os diagramas abaixo utilizam o padrão **C4 Model** (Context, Container, Component) suportado nativamente pelo Mermaid no GitHub para representar como a aplicação funciona e quem são os envolvidos.
-
-### Nível 1: Diagrama de Contexto
-
-Visão de alto nível mostrando o sistema Ordo Finance, o usuário principal e o provedor de nuvem (Supabase).
+Visão de alto nível: quem usa o sistema e com o que ele se comunica.
 
 ```mermaid
-C4Context
-    title Nível 1: Diagrama de Contexto de Sistema - Ordo Finance
-    
-    Person(usuario, "Usuário do Sistema", "Acompanha suas finanças, receitas e cartões.")
-    
-    System(ordo, "Ordo Finance", "Plataforma instalada em PaaS (Ex: Render.com). Entregue via Docker.")
-    
-    SystemExt(supabase, "Supabase (PostgreSQL)", "PaaS Database que hospeda o Postgres para armazenamento seguro na nuvem.")
+flowchart TD
+    U["👤 Usuário\n──────────────\nAcompanha finanças\nvia navegador web"]
+    O["🏦 Ordo Finance\n──────────────\nAplicação Web\nRender.com · Docker"]
+    DB[("🗄️ PostgreSQL\n──────────────\nBanco de Dados\nRender · Free Tier")]
 
-    Rel_R(usuario, ordo, "Acessa a interface web via", "HTTPS")
-    Rel_R(ordo, supabase, "Lê e grava dados via", "PostgreSQL Protocol")
-    
-    UpdateElementStyle(usuario, $fontColor="white", $bgColor="#08427B", $borderColor="#052E56")
-    UpdateElementStyle(ordo, $fontColor="white", $bgColor="#1168BD", $borderColor="#0B4884")
-    UpdateElementStyle(supabase, $fontColor="white", $bgColor="#555555", $borderColor="#333333")
+    U -- "HTTPS" --> O
+    O -- "SQL · psycopg2" --> DB
+
+    style U  fill:#08427B,color:#FFFFFF,stroke:#052E56
+    style O  fill:#1168BD,color:#FFFFFF,stroke:#0B4884
+    style DB fill:#2D882D,color:#FFFFFF,stroke:#1B5E1B
 ```
 
-### Nível 2: Diagrama de Containers
+---
 
-Decomposição interna do sistema, detalhando o monolito principal (Django), o banco de dados e o microserviço projetado.
+### Nível 2 — Containers
+
+Decomposição dos serviços que compõem o sistema em produção.
 
 ```mermaid
-C4Container
-    title Nível 2: Diagrama de Containers - Ordo Finance
-    
-    Person(usuario, "Usuário", "Pessoa monitorando finanças")
+flowchart TD
+    U["👤 Usuário"]
 
-    System_Boundary(c1, "Nuvem de Hospedagem (Render / Fly.io)") {
-        Container(webapp, "App Web Principal", "Docker, Django, Gunicorn", "Monolito SSR responsável pelo Core. Servido confiavelmente com WhiteNoise.")
-        Container(api, "Microserviço de Relatórios", "Docker, FastAPI, Uvicorn", "Backend isolado para rotinas sem afetar o Core Web.")
-    }
-    
-    System_Boundary(c2, "Supabase") {
-        ContainerDb(db, "Banco de Dados", "PostgreSQL", "Armazena transações, usuários e hashes.")
-    }
-    
-    Rel_R(usuario, webapp, "Acessa páginas via", "HTTPS")
-    Rel_D(webapp, api, "Delega geração de PDF via", "REST")
-    Rel_D(webapp, db, "Consultas transacionais via", "Django ORM")
-    Rel_L(api, db, "Agrega dados via", "SQL puro")
-    
-    UpdateElementStyle(webapp, $fontColor="white", $bgColor="#1168BD", $borderColor="#0B4884")
-    UpdateElementStyle(api, $fontColor="white", $bgColor="#1168BD", $borderColor="#0B4884")
-    UpdateElementStyle(db, $fontColor="white", $bgColor="#2D882D", $borderColor="#1B5E1B")
+    subgraph RENDER["☁️  Render.com"]
+        direction TB
+        WEB["🐍 App Principal\n──────────────\nDjango 5 · Gunicorn · WhiteNoise\nDocker · porta 8000\n\nAutenticação · CRUD · Dashboard\nTemplates SSR · Assets estáticos"]
+        API["⚡ Microserviço de Relatórios\n──────────────\nFastAPI · Uvicorn\nDocker · porta 8001\n\nGeração de PDFs (planejado)"]
+    end
+
+    subgraph DB_HOST["🗄️  Banco de Dados"]
+        DB[("PostgreSQL\nRender Free DB\n\ntransacoes · categorias\ncartoes · users")]
+    end
+
+    U        -- "HTTPS · navegador"           --> WEB
+    WEB      -- "REST · HTTP (delegação)"     --> API
+    WEB      -- "Django ORM · psycopg2"       --> DB
+    API      -- "SQL puro · psycopg2"         --> DB
+
+    style U   fill:#08427B,color:#FFFFFF,stroke:#052E56
+    style WEB fill:#1168BD,color:#FFFFFF,stroke:#0B4884
+    style API fill:#1168BD,color:#FFFFFF,stroke:#0B4884
+    style DB  fill:#2D882D,color:#FFFFFF,stroke:#1B5E1B
 ```
 
-### Nível 3: Diagrama de Componentes (Aplicação Web Principal)
+---
 
-Decomposição interna do Container "Aplicação Web Principal", mapeando exatamente como o código do Django está estruturado no repositório.
+### Nível 3 — Componentes (App Django)
+
+Estrutura interna do monolito Django, mapeando os arquivos reais do repositório.
 
 ```mermaid
-C4Component
-    title Nível 3: Diagrama de Componentes - Monolito Django
-    
-    Container_Boundary(webapp, "App Web Core (Django)") {
-        Component(views, "Controladores (views.py)", "FBV / CBV", "Lógica central: dashboard, transacao_views, categoria_views e cartao_views.")
-        Component(templates, "Templates SSR (.html)", "Tailwind + Alpine", "Arquivos base.html, includes/ e painéis injetados com contexto nativo.")
-        Component(auth, "Segurança (contrib.auth)", "Decorators", "Uso do @login_required e sessões de usuário isoladas no banco.")
-        Component(forms, "Validadores (forms.py)", "Django Forms", "Classes TransacaoForm, CartaoCreditoForm e CategoriaForm.")
-        Component(models, "Domínios (models.py)", "Django ORM", "Classes Transacao, Categoria e CartaoCredito com suas FKs.")
-    }
-    
-    ContainerDb(db, "PostgreSQL", "Supabase", "Armazena as tabelas espelhadas do ORM.")
+flowchart TD
+    REQ["🌐 Requisição HTTP\nnavegador do usuário"]
 
-    Rel_R(views, templates, "Injeta contexto renderizado em", "HTTP Response")
-    Rel_D(views, auth, "Bloqueia acesso sem sessão via")
-    Rel_D(views, forms, "Despacha requisições POST para")
-    Rel_D(views, models, "Faz Queries / Filtros através de")
-    Rel_L(forms, models, "Cria ou Atualiza instâncias em")
-    Rel_R(auth, models, "Lê chaves e profiles usando")
-    Rel_D(models, db, "Sincroniza schema e dados via", "SQL (Psycopg2)")
-    
-    UpdateElementStyle(auth, $fontColor="white", $bgColor="#4A90D9", $borderColor="#2C6FAC")
-    UpdateElementStyle(views, $fontColor="white", $bgColor="#4A90D9", $borderColor="#2C6FAC")
-    UpdateElementStyle(forms, $fontColor="white", $bgColor="#4A90D9", $borderColor="#2C6FAC")
-    UpdateElementStyle(models, $fontColor="white", $bgColor="#4A90D9", $borderColor="#2C6FAC")
-    UpdateElementStyle(templates, $fontColor="white", $bgColor="#E67E22", $borderColor="#C0651A")
+    subgraph DJANGO["🐍  financas/  —  App Django"]
+        direction TB
+        AUTH["🔐 contrib.auth\n──────────────\n@login_required\nLoginRequiredMixin\nSessões isoladas por usuário"]
+
+        VIEWS["📋 views.py\n──────────────\nFBV: dashboard · lista_transacoes\n      adicionar · editar · remover\nCBV: CartaoCredito(List·Create·Update·Delete)\n     Categoria(List·Create·Update·Delete)\nBase mixins: BaseCartaoCreditoView\n             BaseCategoriaView"]
+
+        FORMS["📝 forms.py\n──────────────\nTransacaoForm\n  └─ querysets filtrados por usuário\nCartaoCreditoForm\nCategoriaForm\n  └─ widgets com classes Tailwind"]
+
+        MODELS["🗂️ models.py\n──────────────\nTransacao\n  ├─ tipo: RECEITA · DESPESA\n  ├─ FK → Categoria (PROTECT)\n  └─ FK → CartaoCredito (CASCADE, nullable)\nCartaoCredito\n  └─ cor: BLUE·GREEN·RED·PURPLE\n         BLACK·ORANGE·GRAY\nCategoria\n  └─ unique_together: (usuario, nome)"]
+
+        TEMPLATES["🎨 templates/\n──────────────\nbase.html + includes/\n  head.html · navbar.html · scripts.html\nfinancas/\n  dashboard.html\n  lista_transacoes.html\n  adicionar_transacao.html\n  cartao_credito_*.html\n  categoria_*.html\n  confirm_delete.html\nregistration/login.html\n\nTailwindCSS · Alpine.js"]
+    end
+
+    DB[("🗄️ PostgreSQL")]
+
+    REQ    -- "verifica sessão"            --> AUTH
+    AUTH   -- "redireciona ou permite"     --> VIEWS
+    VIEWS  -- "valida dados POST"          --> FORMS
+    VIEWS  -- "queries filtradas\npor request.user" --> MODELS
+    VIEWS  -- "injeta contexto"            --> TEMPLATES
+    FORMS  -- "cria / atualiza instâncias" --> MODELS
+    MODELS -- "ORM · psycopg2"             --> DB
+
+    style AUTH      fill:#4A90D9,color:#FFFFFF,stroke:#2C6FAC
+    style VIEWS     fill:#1168BD,color:#FFFFFF,stroke:#0B4884
+    style FORMS     fill:#4A90D9,color:#FFFFFF,stroke:#2C6FAC
+    style MODELS    fill:#4A90D9,color:#FFFFFF,stroke:#2C6FAC
+    style TEMPLATES fill:#D4820A,color:#FFFFFF,stroke:#A0600A
+    style DB        fill:#2D882D,color:#FFFFFF,stroke:#1B5E1B
 ```
+
+---
+
+### Modelo de Dados (ER)
+
+Relacionamentos e campos das tabelas gerenciadas pelo Django ORM.
+
+```mermaid
+erDiagram
+    User ||--o{ Categoria      : "possui"
+    User ||--o{ CartaoCredito  : "possui"
+    User ||--o{ Transacao      : "registra"
+
+    Categoria     ||--o{ Transacao : "classifica (PROTECT)"
+    CartaoCredito |o--o{ Transacao : "vincula (CASCADE · opcional)"
+
+    Categoria {
+        int    id        PK
+        int    usuario   FK
+        string nome         "max_length=100 · unique por usuário"
+    }
+
+    CartaoCredito {
+        int     id             PK
+        int     usuario        FK
+        string  nome              "max_length=100"
+        decimal limite            "max_digits=10 · decimal_places=2"
+        int     dia_fechamento
+        int     dia_vencimento
+        string  cor               "BLUE|GREEN|RED|PURPLE|BLACK|ORANGE|GRAY"
+    }
+
+    Transacao {
+        int     id              PK
+        int     usuario         FK
+        int     categoria       FK  "on_delete=PROTECT"
+        int     cartao_credito  FK  "nullable · on_delete=CASCADE"
+        date    data
+        string  tipo               "RECEITA|DESPESA"
+        string  descricao          "max_length=200"
+        decimal valor              "max_digits=10 · decimal_places=2"
+        bool    fatura_paga        "default=False"
+    }
+```
+
+---
 
 ## Requisitos Funcionais
 
-*   **RF01:** Autenticação segura com login/logout
-*   **RF02:** CRUD de transações (receitas e despesas) com data, descrição, valor, categoria e cartão opcional
-*   **RF03:** Gerenciamento de cartões de crédito (nome, limite, fechamento, vencimento, cor)
-*   **RF04:** Categorização personalizada de transações por usuário
-*   **RF05:** Dashboard com saldo total, resumo mensal e últimos 5 lançamentos
-*   **RF06:** Histórico completo de transações com paginação
-*   **RF07:** Isolamento de dados por usuário (sem vazamento entre contas)
-*   **RF08:** Exportação de relatórios em PDF via microserviço
+| ID | Requisito |
+|----|-----------|
+| RF01 | Autenticação segura com login e logout |
+| RF02 | CRUD de transações com data, descrição, valor, categoria e cartão opcional |
+| RF03 | Gerenciamento de cartões de crédito (nome, limite, fechamento, vencimento, cor) |
+| RF04 | Categorização personalizada de transações por usuário |
+| RF05 | Dashboard com saldo total, resumo mensal e últimos 5 lançamentos |
+| RF06 | Histórico completo de transações com paginação (10 itens/página) |
+| RF07 | Isolamento total de dados por usuário |
+| RF08 | Exportação de relatórios em PDF via microserviço *(planejado)* |
 
 ## Requisitos Não Funcionais
 
-*   **RNF01:** Arquitetura híbrida (Django monolito + FastAPI microserviço)
-*   **RNF02:** Backend em Python 3.12+ com Django 5.x e FastAPI
-*   **RNF03:** Frontend Server-Side Rendering (Django Templates + TailwindCSS + Alpine.js)
-*   **RNF04:** Rotas protegidas por autenticação obrigatória
-*   **RNF05:** Integridade referencial com proteção de histórico (PROTECT) e deleção em cascata (CASCADE)
-*   **RNF06:** Paginação de listagens (máximo 10 itens/página)
-*   **RNF07:** Infraestrutura containerizada via Docker Compose com banco de dados remoto (Supabase/PostgreSQL) para escalabilidade
+| ID | Requisito |
+|----|-----------|
+| RNF01 | Arquitetura híbrida: Django monolito + FastAPI microserviço |
+| RNF02 | Python 3.12+ · Django 5.x · FastAPI |
+| RNF03 | Frontend SSR: Django Templates + TailwindCSS + Alpine.js |
+| RNF04 | Todas as rotas protegidas por autenticação obrigatória |
+| RNF05 | Integridade referencial: PROTECT para categorias, CASCADE para cartões |
+| RNF06 | Infraestrutura containerizada via Docker Compose |
 
-## Tecnologias Utilizadas
+---
 
-*   **Backend:** Python 3.12+, Django 5.x, FastAPI
-*   **Servidores de Produção:** Gunicorn (Django), Uvicorn (FastAPI), WhiteNoise (Assets HD)
-*   **Frontend:** TailwindCSS, Alpine.js
-*   **Infraestrutura e Deploy:** Docker (Imagens Multi-container), Render.com / Railway
-*   **Banco de Dados:** PostgreSQL Cloud (Supabase)
+## Tecnologias
 
-## Como Fazer o Deploy para Produção (Render.com)
+| Camada | Tecnologias |
+|--------|------------|
+| Backend | Python 3.12 · Django 5.x · FastAPI |
+| Servidores | Gunicorn (Django) · Uvicorn (FastAPI) · WhiteNoise + Brotli (assets) |
+| Frontend | Django Templates · TailwindCSS · Alpine.js |
+| Banco de Dados | PostgreSQL · psycopg2 · dj-database-url |
+| Infraestrutura | Docker · Docker Compose · Render.com |
 
-Graças ao encapsulamento em Docker puro e configuração universal das Variáveis de Ambiente, a plataforma do **Render.com** (que possui *Tier Gratuito*) é a nossa opção de infraestrutura Cloud recomendada!
+---
+
+## Deploy no Render.com (Free Tier)
+
+O projeto está **100% pronto** para deploy no Render. O `entrypoint.sh` executa automaticamente as migrations, coleta os arquivos estáticos e inicia o Gunicorn.
 
 ### Passo a Passo
 
-1. Tenha o `DATABASE_URL` do seu projeto Supabase em mãos.
-2. Acesse sua conta no **Render.com** e crie um novo **Web Service**.
-3. Vincule seu repositório do Github contendo o Ordo Finance.
-4. Em *Environment*, selecione **Docker**. O Render fará a leitura automática e construirá o app pelas diretrizes do seu `Dockerfile`.
-5. Preencha as Variáveis (*Environment Variables*):
-   - `DATABASE_URL` = [A connection string que você obteve no Supabase]
-   - `SECRET_KEY` = [Gere um passkey/hash aleatório para proteger seu Django]
-   - `DEBUG` = `False`
-   - `ALLOWED_HOSTS` = `*`
-6. Clique em **Deploy**! A plataforma subirá instâncias Linux e em minutos você terá acesso seguro via `https://ordo-finance-suaconta.onrender.com`.
+1. Acesse [render.com](https://render.com) e crie um **PostgreSQL** gratuito. Copie a *Internal Database URL*.
+2. Crie um novo **Web Service** e vincule este repositório.
+3. Em *Settings*, selecione **Docker** como ambiente de build.
+4. Configure as variáveis de ambiente:
+
+   | Variável | Valor |
+   |----------|-------|
+   | `DATABASE_URL` | URL interna do PostgreSQL criado no passo 1 |
+   | `SECRET_KEY` | Hash aleatório e seguro |
+   | `DEBUG` | `False` |
+   | `ALLOWED_HOSTS` | `*` ou seu domínio |
+
+5. Clique em **Deploy**. Em alguns minutos a aplicação estará disponível em `https://seu-servico.onrender.com`.
+
+> **Atenção:** No free tier, o web service dorme após 15 minutos de inatividade e leva ~30s para acordar. O PostgreSQL gratuito expira em 90 dias.
 
 ---
 
-## Como Executar o Projeto (Localmente para Testes)
+## Execução Local
 
-### Via Docker Compose (Recomendado)
+### Via Docker Compose (recomendado)
 
-O projeto possui de forma nativamente acoplada um `docker-compose.prod.yml` arquitetado para Nuvem e também suporta devs locais.
+```bash
+docker-compose up --build
+```
 
-1. Clone o projeto e crie um arquivo `.env` na raiz informando o `DATABASE_URL`.
-2. Rode no bash:
-    ```bash
-    docker-compose up --build
-    ```
+Serviços disponíveis:
 
-4.  Acesse a aplicação principal em: `http://localhost:8000`
+| Serviço | URL |
+|---------|-----|
+| Django (app principal) | http://localhost:8000 |
+| FastAPI (microserviço) | http://localhost:8001 |
+| PostgreSQL | localhost:5432 |
 
----
+### Sem Docker
 
-### Execução Local (Sem Docker)
-
-Caso necessite rodar localmente para testes rápidos:
-1. Crie e ative um ambiente virtual: `python -m venv venv`
-2. Instale as dependências: `pip install -r requirements.txt`
-3. Configure a `DATABASE_URL` no `.env`
-4. Execute: `python manage.py runserver`
+```bash
+python -m venv venv
+source venv/bin/activate       # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+# configure DATABASE_URL no .env ou exporte a variável
+python manage.py migrate
+python manage.py createsuperuser
+python manage.py runserver
+```
