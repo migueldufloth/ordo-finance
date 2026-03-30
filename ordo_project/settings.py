@@ -59,7 +59,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'ordo_project.wsgi.application'
 
 # dj-database-url handles parsing the DATABASE_URL environment variable.
-# Example for Docker/Render: DATABASE_URL=postgres://user:password@host:port/dbname
+# Example for Docker/Oracle Cloud: DATABASE_URL=postgres://user:password@host:port/dbname
 # If DATABASE_URL is not provided, it falls back to the original local SQLite setup.
 DATABASES = {
     'default': dj_database_url.config(

@@ -24,7 +24,7 @@ flowchart TD
     Ordo["<b>⚙️ Ordo Finance</b><br/><span style='font-size:12px; color:#ddd'>Aplicação web de gestão financeira pessoal<br/>hospedada na Oracle Cloud via Docker Compose</span>"]:::system
     DB[("<b>🗄️ PostgreSQL</b><br/><span style='font-size:12px; color:#ddd'>Banco de dados em container<br/>com volume persistente</span>")]:::db
 
-    User -- "Acessa via HTTPS" --> Ordo
+    User -- "Acessa via HTTP" --> Ordo
     Ordo -- "Lê e grava dados" --> DB
 
     linkStyle default stroke:#66B2FF,stroke-width:2px,color:#E0E0E0,font-size:13px;
@@ -56,7 +56,7 @@ flowchart LR
     end
     class Oracle boundary;
 
-    User -- "Navega [HTTPS]" --> Web
+    User -- "Navega [HTTP]" --> Web
 
     linkStyle default stroke:#66B2FF,stroke-width:2px,color:#E0E0E0,font-size:13px;
 ```

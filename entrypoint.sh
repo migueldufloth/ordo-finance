@@ -4,8 +4,7 @@
 set -e
 
 echo "Aguardando Banco de Dados..."
-# Em produção o banco já está disponível (Render PostgreSQL); localmente use wait-for-it se necessário
-# ou em docker local podemos usar wait-for-it
+# O container web só sobe após o db passar no health check (pg_isready) via docker-compose.prod.yml
 
 echo "Aplicando migrations..."
 python manage.py migrate --noinput
