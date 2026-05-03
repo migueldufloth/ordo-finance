@@ -7,7 +7,7 @@
     {% include "includes/head.html" %}
 </head>
 
-<body class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 font-sans text-dark-800">
+<body class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-800 font-sans text-dark-800 dark:text-slate-200">
     {% if user.is_authenticated %}
     {% include "includes/navbar.html" %}
     {% endif %}
