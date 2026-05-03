@@ -108,3 +108,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 LOGIN_URL = '/accounts/login/'
+
+# URL interna do microserviço FastAPI (http://api:8000 no Docker)
+REPORTS_API_URL = os.environ.get('REPORTS_API_URL', 'http://api:8000')

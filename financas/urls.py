@@ -2,12 +2,13 @@ from django.urls import path
 from .views import (
     lista_transacoes,
     adicionar_transacao,
+    editar_transacao,
+    remover_transacao,
+    gerar_relatorio,
     CartaoCreditoListView,
     CartaoCreditoCreateView,
     CartaoCreditoUpdateView,
     CartaoCreditoDeleteView,
-    remover_transacao,
-    editar_transacao,
     CategoriaListView,
     CategoriaCreateView,
     CategoriaUpdateView,
@@ -20,6 +21,7 @@ urlpatterns = [
     path('adicionar/', adicionar_transacao, name='adicionar_transacao'),
     path('<int:pk>/editar/', editar_transacao, name='editar_transacao'),
     path('<int:pk>/remover/', remover_transacao, name='remover_transacao'),
+    path('relatorio/', gerar_relatorio, name='gerar_relatorio'),
 
     # Rotas para cartões de crédito
     path('cartoes/', CartaoCreditoListView.as_view(), name='cartao_credito_list'),
