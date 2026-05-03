@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block title %}Novo Lançamento - Ordo{% endblock %}
+{% block title %}{% if editando %}Editar Lançamento{% else %}Novo Lançamento{% endif %} - Ordo{% endblock %}
 {% block content %}
 
 <!-- Header -->
 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 animate-fade-in">
     <div class="mb-4 sm:mb-0">
-        <h1 class="text-3xl sm:text-4xl font-bold text-dark-800 mb-2">Novo Lançamento</h1>
-        <p class="text-dark-500 text-lg">Adicione uma nova transação ao seu controle financeiro</p>
+        <h1 class="text-3xl sm:text-4xl font-bold text-dark-800 mb-2">{% if editando %}Editar Lançamento{% else %}Novo Lançamento{% endif %}</h1>
+        <p class="text-dark-500 text-lg">{% if editando %}Atualize os dados da transação{% else %}Adicione uma nova transação ao seu controle financeiro{% endif %}</p>
     </div>
     
     <a href="{% url 'lista_transacoes' %}"
@@ -134,6 +134,15 @@
                             <span>{{ form.cartao_credito.errors.as_text }}</span>
                         </p>
                         {% endif %}
+                    </div>
+
+                    <!-- Fatura Paga -->
+                    <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
+                        {{ form.fatura_paga }}
+                        <label for="{{ form.fatura_paga.id_for_label }}" class="flex items-center space-x-2 text-dark-700 font-medium cursor-pointer">
+                            <i data-lucide="check-circle" class="w-4 h-4 text-green-600"></i>
+                            <span>Fatura paga</span>
+                        </label>
                     </div>
                 </div>
                 

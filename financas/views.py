@@ -1,11 +1,15 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.db.models import Sum
-from datetime import datetime
+from django.http import HttpResponse
+from django.utils import timezone
+from django.conf import settings
 from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
+import requests
 
 from .models import Transacao, CartaoCredito, Categoria
 from .forms import TransacaoForm, CartaoCreditoForm, CategoriaForm
@@ -20,9 +24,9 @@ def dashboard(request):
     total_receitas = transacoes.filter(tipo="RECEITA").aggregate(Sum("valor"))["valor__sum"] or 0
     total_despesas = transacoes.filter(tipo="DESPESA").aggregate(Sum("valor"))["valor__sum"] or 0
     
-    # Cálculos do mês atual
-    agora = datetime.now()
-    transacoes_mes = transacoes.filter(data__year=agora.year, data__month=agora.month)
+    # Cálculos do mês atual (timezone-aware para America/Sao_Paulo)
+    hoje = timezone.localdate()
+    transacoes_mes = transacoes.filter(data__year=hoje.year, data__month=hoje.month)
     receitas_mes = transacoes_mes.filter(tipo="RECEITA").aggregate(Sum("valor"))["valor__sum"] or 0
     despesas_mes = transacoes_mes.filter(tipo="DESPESA").aggregate(Sum("valor"))["valor__sum"] or 0
     
@@ -144,8 +148,41 @@ class CategoriaUpdateView(BaseCategoriaView, UpdateView):
 
 class CategoriaDeleteView(BaseCategoriaView, DeleteView):
     template_name = "financas/confirm_delete.html"
-    
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['type'] = 'categoria'
         return context
+
+
+@login_required
+def gerar_relatorio(request):
+    """Delega a geração do PDF ao microserviço FastAPI e retorna o arquivo."""
+    transacoes = Transacao.objects.filter(usuario=request.user).select_related('categoria')
+    dados = {
+        "usuario": request.user.username,
+        "transacoes": [
+            {
+                "data": str(t.data),
+                "descricao": t.descricao,
+                "tipo": t.tipo,
+                "valor": str(t.valor),
+                "categoria": t.categoria.nome if t.categoria else "",
+            }
+            for t in transacoes
+        ],
+    }
+    try:
+        resposta = requests.post(
+            f"{settings.REPORTS_API_URL}/relatorio/pdf",
+            json=dados,
+            timeout=30,
+        )
+        resposta.raise_for_status()
+    except requests.exceptions.RequestException:
+        messages.error(request, "Não foi possível gerar o relatório. Verifique se o serviço está disponível.")
+        return redirect("lista_transacoes")
+
+    response = HttpResponse(resposta.content, content_type="application/pdf")
+    response["Content-Disposition"] = 'attachment; filename="relatorio-ordo.pdf"'
+    return response

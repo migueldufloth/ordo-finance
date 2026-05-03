@@ -15,6 +15,11 @@
             <i data-lucide="arrow-left" class="w-4 h-4"></i>
             <span>Voltar</span>
         </a>
+        <a href="{% url 'gerar_relatorio' %}"
+            class="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-3 rounded-xl transition-colors shadow">
+            <i data-lucide="file-down" class="w-4 h-4"></i>
+            <span>Exportar PDF</span>
+        </a>
         <a href="{% url 'adicionar_transacao' %}"
             class="group bg-primary-500 hover:bg-primary-600 text-white font-semibold px-6 py-3 rounded-xl transition-all duration-300 flex items-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-105">
             <i data-lucide="plus" class="w-5 h-5 group-hover:rotate-90 transition-transform duration-300"></i>
@@ -138,6 +143,20 @@
                         <div
                             class="text-lg font-bold {% if transacao.tipo == 'RECEITA' %}text-green-600{% else %}text-red-600{% endif %}">
                             {% if transacao.tipo == 'DESPESA' %}- {% else %}+ {% endif %}R$ {{ transacao.valor|floatformat:2 }}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        <div class="flex items-center justify-center space-x-1">
+                            <a href="{% url 'editar_transacao' transacao.pk %}"
+                               class="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                               title="Editar">
+                                <i data-lucide="pencil" class="w-4 h-4"></i>
+                            </a>
+                            <a href="{% url 'remover_transacao' transacao.pk %}"
+                               class="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                               title="Remover">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </a>
                         </div>
                     </td>
                 </tr>
