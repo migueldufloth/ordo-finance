@@ -24,10 +24,10 @@ Analise as mudanças no repositório, gere uma mensagem de commit no padrão Con
 | `style` | Formatação pura, sem impacto em lógica |
 
 **Regras obrigatórias:**
-- Mensagem sempre em **português**
+- Mensagem em **português com acentuação correta** — Git usa UTF-8 e GitHub exibe corretamente
 - Descrição no **imperativo presente**, minúscula, sem ponto final
-  - ✅ `adiciona validação de limite no cartão`
-  - ❌ `Adicionou validação` / `Adicionar validação.`
+  - ✅ `corrige cálculo de mês no dashboard`
+  - ❌ `Corrigiu cálculo` / `Corrigir cálculo.`
 - Primeira linha: **máximo 72 caracteres**
 - Corpo: apenas quando o **motivo** não é óbvio pelo diff — nunca descreva o que o código faz, só o porquê
 - **Sem** `Co-Authored-By`, sem referências a ferramentas ou IA
