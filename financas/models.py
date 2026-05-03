@@ -1,3 +1,5 @@
+import decimal
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -22,11 +24,23 @@ class CartaoCredito(models.Model):
         LARANJA = "ORANGE", "Laranja"
         CINZA = "GRAY", "Cinza"
 
+    _DIA_VALIDATORS = [MinValueValidator(1), MaxValueValidator(31)]
+
     usuario = models.ForeignKey(User, on_delete=models.CASCADE)
     nome = models.CharField(max_length=100, verbose_name="Nome do Cartão")
-    limite = models.DecimalField(max_digits=10, decimal_places=2)
-    dia_fechamento = models.IntegerField(verbose_name="Dia do Fechamento")
-    dia_vencimento = models.IntegerField(verbose_name="Dia do Vencimento")
+    limite = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(decimal.Decimal("0.01"))],
+    )
+    dia_fechamento = models.IntegerField(
+        verbose_name="Dia do Fechamento",
+        validators=_DIA_VALIDATORS,
+    )
+    dia_vencimento = models.IntegerField(
+        verbose_name="Dia do Vencimento",
+        validators=_DIA_VALIDATORS,
+    )
     cor = models.CharField(
         max_length=6, 
         choices=Cor.choices, 
@@ -50,7 +64,11 @@ class Transacao(models.Model):
     data = models.DateField()
     tipo = models.CharField(max_length=7, choices=Tipo.choices)
     descricao = models.CharField(max_length=200, verbose_name="Descrição")
-    valor = models.DecimalField(max_digits=10, decimal_places=2)
+    valor = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(decimal.Decimal("0.01"))],
+    )
     categoria = models.ForeignKey(Categoria, on_delete=models.PROTECT)
     cartao_credito = models.ForeignKey(
         CartaoCredito, 
@@ -68,10 +86,6 @@ class Transacao(models.Model):
 
     def __str__(self):
         return f"[{self.data}] {self.descricao} - R$ {self.valor}"
-
-
-
-
 
 
 
