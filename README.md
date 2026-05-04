@@ -212,12 +212,13 @@ Formulário para cadastrar um cartão com nome, cor, limite, dia de fechamento e
 | GET/POST | `/transacoes/categorias/<pk>/remover/` | `categoria_delete` | Remover categoria |
 | GET | `/admin/` | — | Django Admin |
 
-### FastAPI (porta 8001) — em desenvolvimento
+### FastAPI (porta 8001)
 
 | Método | URL | Descrição |
 |--------|-----|-----------|
-| GET | `/health` | Health check do microserviço |
 | GET | `/` | Status do serviço |
+| GET | `/health` | Health check do microserviço |
+| POST | `/relatorio/pdf` | Gera relatório PDF a partir de lista de transações |
 
 ---
 
@@ -232,7 +233,7 @@ Formulário para cadastrar um cartão com nome, cor, limite, dia de fechamento e
 | RF05 | Dashboard com saldo total, resumo mensal e últimos 5 lançamentos |
 | RF06 | Histórico completo de transações com paginação (10 itens/página) |
 | RF07 | Isolamento total de dados por usuário |
-| RF08 | Exportação de relatórios em PDF via microserviço *(planejado)* |
+| RF08 | Exportação de relatórios em PDF via microserviço FastAPI |
 
 ## Requisitos Não Funcionais
 
@@ -244,6 +245,7 @@ Formulário para cadastrar um cartão com nome, cor, limite, dia de fechamento e
 | RNF04 | Todas as rotas protegidas por autenticação obrigatória |
 | RNF05 | Integridade referencial: PROTECT para categorias, CASCADE para cartões |
 | RNF06 | Infraestrutura containerizada via Docker Compose |
+| RNF07 | Pipeline CI/CD automatizado via GitHub Actions com self-hosted runner |
 
 ---
 
@@ -256,6 +258,7 @@ Formulário para cadastrar um cartão com nome, cor, limite, dia de fechamento e
 | Frontend | Django Templates · TailwindCSS · Alpine.js · Lucide Icons |
 | Banco de Dados | PostgreSQL 15 · psycopg2 · dj-database-url |
 | Infraestrutura | Docker · Docker Compose · Oracle Cloud Always Free |
+| CI/CD | GitHub Actions · Self-hosted Runner |
 
 ---
 
@@ -294,6 +297,30 @@ POSTGRES_PASSWORD=senha-forte-aqui
 ```
 
 > Em produção, `DATABASE_URL` é montado automaticamente pelo `docker-compose.prod.yml` a partir das variáveis `POSTGRES_*` — não precisa definir manualmente.
+
+---
+
+## CI/CD
+
+O pipeline é gerenciado pelo **GitHub Actions** com um **self-hosted runner** instalado diretamente na VM de produção.
+
+```
+git push origin main
+       │
+       ▼
+  Job: test (ubuntu-latest)
+  ├── pip install -r requirements.txt
+  ├── manage.py check
+  └── manage.py test financas
+       │ (somente se passar)
+       ▼
+  Job: deploy (self-hosted — VM Oracle Cloud)
+  ├── git pull origin main
+  ├── docker compose -f docker-compose.prod.yml up -d --build
+  └── manage.py migrate --noinput
+```
+
+O runner roda como serviço `systemd` na VM, conectando-se ao GitHub via HTTPS de saída — sem portas abertas para automação.
 
 ---
 
@@ -432,8 +459,10 @@ docker compose -f docker-compose.prod.yml exec db pg_dump -U postgres ordo > bac
 ## Estrutura do Projeto
 
 ```
-ordo_django/
-├── api/                        # Microserviço FastAPI (relatórios)
+ordo-finance/
+├── .github/workflows/
+│   └── deploy.yml              # Pipeline CI/CD (testes + deploy automático)
+├── api/                        # Microserviço FastAPI (relatórios PDF)
 │   ├── main.py                 # Endpoints FastAPI
 │   ├── requirements.txt
 │   └── Dockerfile
