@@ -352,84 +352,11 @@ Acesse em `http://localhost:8000`.
 
 ## Deploy na Oracle Cloud (Always Free)
 
-Toda a aplicação sobe via `docker-compose.prod.yml` em uma VM gratuita e permanente da Oracle Cloud. O banco de dados roda como container com volume persistente — sem serviços externos pagos.
+A aplicação roda numa VM Ubuntu da Oracle Cloud Always Free via `docker-compose.prod.yml`. O banco de dados é um container PostgreSQL com volume persistente — sem serviços externos pagos.
 
-### 1. Criar a VM na Oracle Cloud
+**Requisitos da VM:** Ubuntu 22.04+, Docker instalado, portas 8000 e 8001 liberadas no Security List da Oracle e no firewall do SO.
 
-1. Acesse [cloud.oracle.com](https://cloud.oracle.com) e crie uma conta (Always Free não exige cartão de crédito em uso).
-2. Crie uma **Compute Instance** com as configurações Always Free:
-   - Shape: `VM.Standard.A1.Flex` (ARM) — até 4 OCPUs e 24 GB RAM, ou `VM.Standard.E2.1.Micro` (AMD)
-   - Imagem: **Ubuntu 22.04**
-3. Salve a chave SSH gerada e anote o IP público da VM.
-
-### 2. Configurar a VM
-
-Conecte via SSH e instale Docker:
-
-```bash
-ssh ubuntu@<IP_DA_VM>
-
-# Instalar Docker
-curl -fsSL https://get.docker.com | sh
-sudo usermod -aG docker ubuntu
-newgrp docker
-
-# Instalar Docker Compose plugin
-sudo apt-get install -y docker-compose-plugin
-docker compose version
-```
-
-Libere as portas no Security List da Oracle (VCN → Security Lists → Ingress Rules):
-
-| Porta | Protocolo | Origem |
-|-------|-----------|--------|
-| 22    | TCP       | 0.0.0.0/0 (SSH) |
-| 8000  | TCP       | 0.0.0.0/0 (Django) |
-| 8001  | TCP       | 0.0.0.0/0 (FastAPI) |
-
-E no firewall da própria VM:
-
-```bash
-sudo iptables -I INPUT -p tcp --dport 8000 -j ACCEPT
-sudo iptables -I INPUT -p tcp --dport 8001 -j ACCEPT
-sudo netfilter-persistent save
-```
-
-### 3. Subir a Aplicação
-
-```bash
-# Clonar o repositório
-git clone <URL_DO_REPO>
-cd ordo_django
-
-# Criar o arquivo de variáveis de ambiente
-cat > .env <<EOF
-DEBUG=False
-SECRET_KEY=sua-chave-secreta-longa
-ALLOWED_HOSTS=<IP_DA_VM>
-POSTGRES_DB=ordo
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=senha-forte-aqui
-EOF
-
-# Build e subida de todos os containers (PostgreSQL + Django + FastAPI)
-docker compose -f docker-compose.prod.yml up -d --build
-
-# Criar superusuário (primeira vez)
-docker compose -f docker-compose.prod.yml exec web python manage.py createsuperuser
-```
-
-A aplicação estará disponível em `http://<IP_DA_VM>:8000`.
-
-### 4. Comportamento do Entrypoint
-
-Ao subir, o container `web` executa automaticamente via `entrypoint.sh`:
-
-1. `python manage.py migrate --noinput` — aplica migrations pendentes
-2. `python manage.py collectstatic --noinput` — coleta arquivos estáticos para WhiteNoise
-3. `gunicorn ordo_project.wsgi:application --bind 0.0.0.0:8000 --workers 3` — sobe o servidor com 3 workers
-
-O container `web` só sobe após o `db` passar no health check (`pg_isready`), evitando falhas de conexão na inicialização.
+Ao subir, o container `web` executa automaticamente via `entrypoint.sh`: migrations → collectstatic → Gunicorn (3 workers). O container só inicia após o `db` passar no health check (`pg_isready`).
 
 ### Comandos Úteis
 
