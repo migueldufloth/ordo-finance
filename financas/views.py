@@ -58,6 +58,7 @@ def adicionar_transacao(request):
         transacao = form.save(commit=False)
         transacao.usuario = request.user
         transacao.save()
+        messages.success(request, "Lançamento adicionado com sucesso.")
         return redirect("lista_transacoes")
 
     return render(request, "financas/adicionar_transacao.html", {"form": form})
@@ -71,6 +72,7 @@ def editar_transacao(request, pk):
     
     if request.method == "POST" and form.is_valid():
         form.save()
+        messages.success(request, "Lançamento atualizado com sucesso.")
         return redirect("lista_transacoes")
 
     return render(request, "financas/adicionar_transacao.html", {"form": form, "editando": True, "transacao": transacao})
@@ -83,6 +85,7 @@ def remover_transacao(request, pk):
     
     if request.method == "POST":
         transacao.delete()
+        messages.success(request, "Lançamento removido.")
         return redirect("lista_transacoes")
         
     return render(request, "financas/confirm_delete.html", {"object": transacao, "type": "transação"})
@@ -107,6 +110,7 @@ class CartaoCreditoCreateView(BaseCartaoCreditoView, CreateView):
 
     def form_valid(self, form):
         form.instance.usuario = self.request.user
+        messages.success(self.request, "Cartão criado com sucesso.")
         return super().form_valid(form)
 
 
@@ -114,10 +118,18 @@ class CartaoCreditoUpdateView(BaseCartaoCreditoView, UpdateView):
     form_class = CartaoCreditoForm
     template_name = "financas/cartao_credito_form.html"
 
+    def form_valid(self, form):
+        messages.success(self.request, "Cartão atualizado com sucesso.")
+        return super().form_valid(form)
+
 
 class CartaoCreditoDeleteView(BaseCartaoCreditoView, DeleteView):
     template_name = "financas/confirm_delete.html"
-    
+
+    def form_valid(self, form):
+        messages.success(self.request, "Cartão removido.")
+        return super().form_valid(form)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['type'] = 'cartão de crédito'
@@ -140,14 +152,23 @@ class CategoriaCreateView(BaseCategoriaView, CreateView):
 
     def form_valid(self, form):
         form.instance.usuario = self.request.user
+        messages.success(self.request, "Categoria criada com sucesso.")
         return super().form_valid(form)
 
 class CategoriaUpdateView(BaseCategoriaView, UpdateView):
     form_class = CategoriaForm
     template_name = "financas/categoria_form.html"
 
+    def form_valid(self, form):
+        messages.success(self.request, "Categoria atualizada com sucesso.")
+        return super().form_valid(form)
+
 class CategoriaDeleteView(BaseCategoriaView, DeleteView):
     template_name = "financas/confirm_delete.html"
+
+    def form_valid(self, form):
+        messages.success(self.request, "Categoria removida.")
+        return super().form_valid(form)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

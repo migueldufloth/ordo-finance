@@ -1,4 +1,6 @@
 <script>
+    // ── Tema ──────────────────────────────────────────────────────────────────
+
     function setTheme(theme) {
         localStorage.setItem('theme', theme);
         applyTheme(theme);
@@ -7,14 +9,8 @@
     function applyTheme(theme) {
         const html = document.documentElement;
         const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        html.classList.toggle('dark', isDark);
 
-        if (isDark) {
-            html.classList.add('dark');
-        } else {
-            html.classList.remove('dark');
-        }
-
-        // Ícone reflete a preferência escolhida, não o resultado
         const iconName = theme === 'system' ? 'monitor' : theme === 'dark' ? 'moon' : 'sun';
         ['theme-icon', 'mobile-theme-icon'].forEach(id => {
             const el = document.getElementById(id);
@@ -24,13 +20,54 @@
         if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 
-    function showNotification(message) {
-        const notification = document.createElement('div');
-        notification.className = 'fixed top-4 right-4 bg-primary-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-fade-in';
-        notification.textContent = message;
-        document.body.appendChild(notification);
-        setTimeout(() => notification.remove(), 3000);
+    // ── Toast ─────────────────────────────────────────────────────────────────
+
+    const _TOAST_CONFIG = {
+        success: { icon: 'check-circle',    bg: 'bg-green-100',  color: 'text-green-600'  },
+        error:   { icon: 'x-circle',        bg: 'bg-red-100',    color: 'text-red-600'    },
+        warning: { icon: 'alert-triangle',  bg: 'bg-amber-100',  color: 'text-amber-600'  },
+        info:    { icon: 'info',            bg: 'bg-gray-100',   color: 'text-gray-500'   },
+    };
+
+    function showToast(message, type) {
+        const cfg = _TOAST_CONFIG[type] || _TOAST_CONFIG.info;
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = 'flex items-start space-x-3 bg-white border border-gray-100 rounded-2xl shadow-lg px-4 py-3 pointer-events-auto';
+        toast.style.cssText = 'transform: translateX(110%); opacity: 0; transition: transform 0.25s ease, opacity 0.25s ease;';
+        toast.innerHTML =
+            '<div class="w-8 h-8 ' + cfg.bg + ' rounded-xl flex items-center justify-center flex-shrink-0">' +
+                '<i data-lucide="' + cfg.icon + '" class="w-4 h-4 ' + cfg.color + '"></i>' +
+            '</div>' +
+            '<p class="text-sm font-medium text-dark-800 flex-1 pt-1">' + message + '</p>' +
+            '<button class="text-dark-400 hover:text-dark-600 flex-shrink-0 pt-0.5 transition-colors" aria-label="Fechar">' +
+                '<i data-lucide="x" class="w-3.5 h-3.5"></i>' +
+            '</button>';
+
+        container.appendChild(toast);
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            toast.style.transform = 'translateX(0)';
+            toast.style.opacity = '1';
+        }));
+
+        function dismiss() {
+            toast.style.transform = 'translateX(110%)';
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 250);
+        }
+
+        const timer = setTimeout(dismiss, 4500);
+        toast.querySelector('button').addEventListener('click', () => {
+            clearTimeout(timer);
+            dismiss();
+        });
     }
+
+    // ── Init ──────────────────────────────────────────────────────────────────
 
     document.addEventListener('DOMContentLoaded', function () {
         lucide.createIcons();
@@ -38,11 +75,16 @@
         const savedTheme = localStorage.getItem('theme') || 'system';
         applyTheme(savedTheme);
 
-        // Atualiza automaticamente quando o SO muda a preferência
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-            if ((localStorage.getItem('theme') || 'system') === 'system') {
-                applyTheme('system');
-            }
+            if ((localStorage.getItem('theme') || 'system') === 'system') applyTheme('system');
         });
+
+        // Renderiza mensagens Django como toasts
+        const msgContainer = document.getElementById('django-messages');
+        if (msgContainer) {
+            msgContainer.querySelectorAll('span[data-level]').forEach(el => {
+                showToast(el.dataset.text, el.dataset.level);
+            });
+        }
     });
 </script>
