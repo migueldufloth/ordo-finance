@@ -37,19 +37,14 @@ jobs:
 
   deploy:
     name: Deploy em Produção
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd ~/ordo-finance
-            git pull origin main
-            docker compose -f docker-compose.prod.yml up -d --build
-            docker compose -f docker-compose.prod.yml exec -T web python manage.py migrate --noinput
+      - name: Atualizar código e reconstruir containers
+        working-directory: /home/ubuntu/ordo-finance
+        run: |
+          git pull origin main
+          docker compose -f docker-compose.prod.yml up -d --build
+          docker compose -f docker-compose.prod.yml exec -T web python manage.py migrate --noinput
