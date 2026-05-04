@@ -10,13 +10,14 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   test:
     name: Testes
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       - uses: actions/checkout@v4
@@ -53,9 +54,11 @@ jobs:
       - name: Atualizar código e reconstruir containers
         working-directory: /home/ubuntu/ordo-finance
         run: |
+          git fetch origin main
+          BEFORE=$(git rev-parse HEAD)
           git pull origin main
 
-          CHANGED=$(git diff HEAD~1 --name-only)
+          CHANGED=$(git diff $BEFORE HEAD --name-only)
 
           if echo "$CHANGED" | grep -q "^api/"; then
             docker compose -f docker-compose.prod.yml build api
