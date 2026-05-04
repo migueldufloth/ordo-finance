@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 import dj_database_url
+import sentry_sdk
 
 # Load environment variables from .env file if present
 load_dotenv()
@@ -111,3 +112,14 @@ LOGIN_URL = '/accounts/login/'
 
 # URL interna do microserviço FastAPI (http://api:8000 no Docker)
 REPORTS_API_URL = os.environ.get('REPORTS_API_URL', 'http://api:8000')
+
+# Sentry — monitoramento de erros em produção
+# Só ativa se SENTRY_DSN estiver definido no ambiente
+_SENTRY_DSN = os.environ.get('SENTRY_DSN', '')
+if _SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=_SENTRY_DSN,
+        send_default_pii=False,
+        enable_logs=True,
+        traces_sample_rate=1.0,
+    )
