@@ -210,6 +210,7 @@ Formulário para cadastrar um cartão com nome, cor, limite, dia de fechamento e
 | GET/POST | `/transacoes/categorias/adicionar/` | `categoria_create` | Nova categoria |
 | GET/POST | `/transacoes/categorias/<pk>/editar/` | `categoria_update` | Editar categoria |
 | GET/POST | `/transacoes/categorias/<pk>/remover/` | `categoria_delete` | Remover categoria |
+| GET | `/health/` | `health` | Health check da aplicação e do banco de dados |
 | GET | `/admin/` | — | Django Admin |
 
 ### FastAPI (porta 8001)
@@ -246,6 +247,7 @@ Formulário para cadastrar um cartão com nome, cor, limite, dia de fechamento e
 | RNF05 | Integridade referencial: PROTECT para categorias, CASCADE para cartões |
 | RNF06 | Infraestrutura containerizada via Docker Compose |
 | RNF07 | Pipeline CI/CD automatizado via GitHub Actions com self-hosted runner |
+| RNF08 | Observabilidade com rastreamento de erros (Sentry) e monitoramento de uptime (Better Stack) |
 
 ---
 
@@ -259,6 +261,7 @@ Formulário para cadastrar um cartão com nome, cor, limite, dia de fechamento e
 | Banco de Dados | PostgreSQL 15 · psycopg2 · dj-database-url |
 | Infraestrutura | Docker · Docker Compose · Oracle Cloud Always Free |
 | CI/CD | GitHub Actions · Self-hosted Runner |
+| Observabilidade | Sentry (erros) · Better Stack (uptime) |
 
 ---
 
@@ -275,28 +278,10 @@ O projeto usa um arquivo `.env` na raiz. Abaixo todas as variáveis suportadas:
 | `POSTGRES_DB` | Sim (Docker) | `ordo` | Nome do banco (usado pelo container PostgreSQL) |
 | `POSTGRES_USER` | Sim (Docker) | `postgres` | Usuário do banco |
 | `POSTGRES_PASSWORD` | Sim (Docker) | — | Senha do banco |
+| `REPORTS_API_URL` | — | `http://api:8000` | URL base do microserviço FastAPI |
+| `SENTRY_DSN` | — | desativado | DSN do Sentry para rastreamento de erros em produção |
 
-**Exemplo de `.env` para desenvolvimento local (sem Docker):**
-
-```env
-DEBUG=True
-SECRET_KEY=qualquer-chave-local
-ALLOWED_HOSTS=localhost,127.0.0.1
-# Sem DATABASE_URL → usa SQLite automático
-```
-
-**Exemplo de `.env` para produção (Oracle Cloud):**
-
-```env
-DEBUG=False
-SECRET_KEY=chave-secreta-longa-e-aleatoria
-ALLOWED_HOSTS=<IP_DA_VM>,seu-dominio.com
-POSTGRES_DB=ordo
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=senha-forte-aqui
-```
-
-> Em produção, `DATABASE_URL` é montado automaticamente pelo `docker-compose.prod.yml` a partir das variáveis `POSTGRES_*` — não precisa definir manualmente.
+> Em produção, `DATABASE_URL` é montado automaticamente pelo `docker-compose.prod.yml` a partir das variáveis `POSTGRES_*`. `SENTRY_DSN` é opcional — o Sentry só inicializa se a variável estiver definida.
 
 ---
 
@@ -322,64 +307,17 @@ git push origin main
 
 O runner roda como serviço `systemd` na VM, conectando-se ao GitHub via HTTPS de saída — sem portas abertas para automação.
 
----
-
-## Execução Local (sem Docker)
-
-```bash
-# Criar e ativar virtualenv
-python -m venv venv
-source venv/bin/activate       # Windows: venv\Scripts\activate
-
-# Instalar dependências
-pip install -r requirements.txt
-
-# Criar o .env (sem DATABASE_URL usa SQLite automaticamente)
-echo "DEBUG=True" > .env
-echo "SECRET_KEY=dev-secret" >> .env
-
-# Aplicar migrations e criar superusuário
-python manage.py migrate
-python manage.py createsuperuser
-
-# Rodar
-python manage.py runserver
-```
-
-Acesse em `http://localhost:8000`.
 
 ---
 
-## Deploy na Oracle Cloud (Always Free)
+## Observabilidade
 
-A aplicação roda numa VM Ubuntu da Oracle Cloud Always Free via `docker-compose.prod.yml`. O banco de dados é um container PostgreSQL com volume persistente — sem serviços externos pagos.
+| Ferramenta | Função |
+|---|---|
+| **Sentry** | Captura exceções em tempo real com stacktrace completo, contexto de request e agrupamento automático. Ativo quando `SENTRY_DSN` está definido no ambiente. |
+| **Better Stack** | Monitoramento de uptime externo via `/health/`. Dispara alertas se a aplicação ou o banco de dados ficarem indisponíveis. |
 
-**Requisitos da VM:** Ubuntu 22.04+, Docker instalado, portas 8000 e 8001 liberadas no Security List da Oracle e no firewall do SO.
-
-Ao subir, o container `web` executa automaticamente via `entrypoint.sh`: migrations → collectstatic → Gunicorn (3 workers). O container só inicia após o `db` passar no health check (`pg_isready`).
-
-### Comandos Úteis
-
-```bash
-# Ver logs em tempo real
-docker compose -f docker-compose.prod.yml logs -f
-
-# Status dos containers
-docker compose -f docker-compose.prod.yml ps
-
-# Criar superusuário
-docker compose -f docker-compose.prod.yml exec web python manage.py createsuperuser
-
-# Atualizar para nova versão
-git pull
-docker compose -f docker-compose.prod.yml up -d --build
-
-# Acessar shell do Django
-docker compose -f docker-compose.prod.yml exec web python manage.py shell
-
-# Backup do banco de dados
-docker compose -f docker-compose.prod.yml exec db pg_dump -U postgres ordo > backup.sql
-```
+O endpoint `/health/` retorna `{"status": "ok", "database": "ok"}` (HTTP 200) quando tudo está operacional, ou `{"status": "degraded", "database": "error"}` (HTTP 503) se o banco não responder.
 
 ---
 
