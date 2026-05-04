@@ -31,6 +31,7 @@ services:
       - DEBUG=False
       - ALLOWED_HOSTS=${ALLOWED_HOSTS:-*}
       - REPORTS_API_URL=http://api:8000
+      - SENTRY_DSN=${SENTRY_DSN:-}
     ports:
       - "8000:8000"
     healthcheck:
