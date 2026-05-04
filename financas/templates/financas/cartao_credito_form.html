@@ -1,221 +1,90 @@
 {% extends "base.html" %}
-{% block title %}
-    {% if object %}Editar Cartão - Ordo{% else %}Novo Cartão - Ordo{% endif %}
-{% endblock %}
+{% block title %}{% if object %}Editar Cartão{% else %}Novo Cartão{% endif %} - Ordo Finance{% endblock %}
 {% block content %}
 
-<!-- Header -->
-<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 animate-fade-in">
-    <div class="mb-4 sm:mb-0">
-        <h1 class="text-3xl sm:text-4xl font-bold text-dark-800 mb-2">
-            {% if object %}
-                Editar Cartão de Crédito
-            {% else %}
-                Novo Cartão de Crédito
-            {% endif %}
-        </h1>
-        <p class="text-dark-500 text-lg">
-            {% if object %}
-                Atualize as informações do seu cartão
-            {% else %}
-                Adicione um novo cartão ao seu controle financeiro
-            {% endif %}
-        </p>
-    </div>
-    
-    <a href="{% url 'cartao_credito_list' %}"
-        class="flex items-center space-x-2 bg-dark-100 hover:bg-dark-200 text-dark-700 font-medium px-4 py-3 rounded-xl transition-colors">
-        <i data-lucide="arrow-left" class="w-4 h-4"></i>
-        <span>Voltar</span>
-    </a>
+<div class="mb-4 animate-fade-in">
+    <h1 class="text-xl font-bold text-dark-800">{% if object %}Editar Cartão{% else %}Novo Cartão de Crédito{% endif %}</h1>
+    <p class="text-dark-500 text-sm">{% if object %}Atualize as informações do cartão{% else %}Adicione um novo cartão{% endif %}</p>
 </div>
 
-<!-- Form Container -->
-<div class="max-w-xl mx-auto">
-    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden animate-slide-up">
-        
-        <!-- Form Header -->
-        <div class="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4">
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                    {% if object %}
-                        <i data-lucide="edit-3" class="w-5 h-5 text-white"></i>
-                    {% else %}
-                        <i data-lucide="credit-card" class="w-5 h-5 text-white"></i>
-                    {% endif %}
+<div class="bg-white rounded-2xl shadow-md border border-gray-100 p-6 animate-slide-up">
+    <form method="post">
+        {% csrf_token %}
+        <div class="space-y-4">
+
+            <!-- Linha 1: nome + cor -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div class="form-group lg:col-span-2">
+                    <label for="{{ form.nome.id_for_label }}" class="flex items-center space-x-2 text-dark-700 font-medium mb-1.5 text-sm">
+                        <i data-lucide="credit-card" class="w-4 h-4"></i>
+                        <span>Nome do Cartão</span>
+                    </label>
+                    {{ form.nome }}
+                    {% if form.nome.errors %}<p class="text-red-600 text-xs mt-1">{{ form.nome.errors.as_text }}</p>{% endif %}
                 </div>
-                <div>
-                    <h2 class="text-lg font-bold text-white">
-                        {% if object %}Editar Cartão{% else %}Dados do Cartão{% endif %}
-                    </h2>
-                    <p class="text-sm text-primary-100">Preencha as informações abaixo</p>
+
+                <div class="form-group">
+                    <label for="{{ form.cor.id_for_label }}" class="flex items-center space-x-2 text-dark-700 font-medium mb-1.5 text-sm">
+                        <i data-lucide="palette" class="w-4 h-4"></i>
+                        <span>Cor</span>
+                    </label>
+                    {{ form.cor }}
+                    {% if form.cor.errors %}<p class="text-red-600 text-xs mt-1">{{ form.cor.errors.as_text }}</p>{% endif %}
+                </div>
+            </div>
+
+            <!-- Linha 2: limite + fechamento + vencimento -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div class="form-group">
+                    <label for="{{ form.limite.id_for_label }}" class="flex items-center space-x-2 text-dark-700 font-medium mb-1.5 text-sm">
+                        <i data-lucide="dollar-sign" class="w-4 h-4"></i>
+                        <span>Limite</span>
+                    </label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-dark-500 text-sm">R$</span>
+                        {{ form.limite }}
+                    </div>
+                    {% if form.limite.errors %}<p class="text-red-600 text-xs mt-1">{{ form.limite.errors.as_text }}</p>{% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.dia_fechamento.id_for_label }}" class="flex items-center space-x-2 text-dark-700 font-medium mb-1.5 text-sm">
+                        <i data-lucide="calendar-x" class="w-4 h-4"></i>
+                        <span>Dia Fechamento</span>
+                    </label>
+                    {{ form.dia_fechamento }}
+                    {% if form.dia_fechamento.errors %}<p class="text-red-600 text-xs mt-1">{{ form.dia_fechamento.errors.as_text }}</p>{% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.dia_vencimento.id_for_label }}" class="flex items-center space-x-2 text-dark-700 font-medium mb-1.5 text-sm">
+                        <i data-lucide="calendar-check" class="w-4 h-4"></i>
+                        <span>Dia Vencimento</span>
+                    </label>
+                    {{ form.dia_vencimento }}
+                    {% if form.dia_vencimento.errors %}<p class="text-red-600 text-xs mt-1">{{ form.dia_vencimento.errors.as_text }}</p>{% endif %}
                 </div>
             </div>
         </div>
-        
-        <!-- Form Content -->
-        <div class="p-6">
-            <form method="post">
-                {% csrf_token %}
-                
-                <div class="space-y-5">
-                    
-                    <!-- Nome e Cor -->
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="form-group">
-                            <label for="{{ form.nome.id_for_label }}" class="flex items-center space-x-2 text-dark-700 font-medium mb-2">
-                                <i data-lucide="credit-card" class="w-4 h-4"></i>
-                                <span>Nome do Cartão</span>
-                            </label>
-                            {{ form.nome }}
-                            {% if form.nome.errors %}
-                            <p class="text-red-600 text-sm mt-1 flex items-center space-x-1">
-                                <i data-lucide="alert-circle" class="w-3 h-3"></i>
-                                <span>{{ form.nome.errors.as_text }}</span>
-                            </p>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="{{ form.cor.id_for_label }}" class="flex items-center space-x-2 text-dark-700 font-medium mb-2">
-                                <i data-lucide="palette" class="w-4 h-4"></i>
-                                <span>Cor do Cartão</span>
-                            </label>
-                            {{ form.cor }}
-                            {% if form.cor.errors %}
-                            <p class="text-red-600 text-sm mt-1 flex items-center space-x-1">
-                                <i data-lucide="alert-circle" class="w-3 h-3"></i>
-                                <span>{{ form.cor.errors.as_text }}</span>
-                            </p>
-                            {% endif %}
-                        </div>
-                    </div>
-                    
-                    <!-- Limite -->
-                    <div class="form-group">
-                        <label for="{{ form.limite.id_for_label }}" class="flex items-center space-x-2 text-dark-700 font-medium mb-2">
-                            <i data-lucide="dollar-sign" class="w-4 h-4"></i>
-                            <span>Limite do Cartão</span>
-                        </label>
-                        <div class="relative">
-                            <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-dark-500 text-sm">R$</span>
-                            {{ form.limite }}
-                        </div>
-                        {% if form.limite.errors %}
-                        <p class="text-red-600 text-sm mt-1 flex items-center space-x-1">
-                            <i data-lucide="alert-circle" class="w-3 h-3"></i>
-                            <span>{{ form.limite.errors.as_text }}</span>
-                        </p>
-                        {% endif %}
-                    </div>
-                    
-                    <!-- Dia Fechamento e Vencimento -->
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="form-group">
-                            <label for="{{ form.dia_fechamento.id_for_label }}" class="flex items-center space-x-2 text-dark-700 font-medium mb-2">
-                                <i data-lucide="calendar-x" class="w-4 h-4"></i>
-                                <span>Dia Fechamento</span>
-                            </label>
-                            {{ form.dia_fechamento }}
-                            {% if form.dia_fechamento.errors %}
-                            <p class="text-red-600 text-sm mt-1 flex items-center space-x-1">
-                                <i data-lucide="alert-circle" class="w-3 h-3"></i>
-                                <span>{{ form.dia_fechamento.errors.as_text }}</span>
-                            </p>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="{{ form.dia_vencimento.id_for_label }}" class="flex items-center space-x-2 text-dark-700 font-medium mb-2">
-                                <i data-lucide="alert-circle" class="w-4 h-4"></i>
-                                <span>Dia Vencimento</span>
-                            </label>
-                            {{ form.dia_vencimento }}
-                            {% if form.dia_vencimento.errors %}
-                            <p class="text-red-600 text-sm mt-1 flex items-center space-x-1">
-                                <i data-lucide="alert-circle" class="w-3 h-3"></i>
-                                <span>{{ form.dia_vencimento.errors.as_text }}</span>
-                            </p>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Form Actions -->
-                <div class="flex items-center justify-between mt-6 pt-5 border-t border-gray-200">
-                    <a href="{% url 'cartao_credito_list' %}" 
-                       class="flex items-center space-x-2 text-dark-500 hover:text-dark-700 font-medium transition-colors">
-                        <i data-lucide="x" class="w-4 h-4"></i>
-                        <span>Cancelar</span>
-                    </a>
-                    
-                    <button type="submit" 
-                            class="flex items-center space-x-2 bg-primary-500 hover:bg-primary-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl">
-                        <i data-lucide="{% if object %}save{% else %}plus{% endif %}" class="w-4 h-4"></i>
-                        <span>{% if object %}Atualizar Cartão{% else %}Salvar Cartão{% endif %}</span>
-                    </button>
-                </div>
-            </form>
+
+        <div class="flex items-center justify-between mt-5 pt-4 border-t border-gray-200">
+            <a href="{% url 'cartao_credito_list' %}"
+               class="flex items-center space-x-2 text-dark-500 hover:text-dark-700 font-medium transition-colors text-sm">
+                <i data-lucide="x" class="w-4 h-4"></i>
+                <span>Cancelar</span>
+            </a>
+            <button type="submit"
+                    class="flex items-center space-x-2 bg-primary-500 hover:bg-primary-600 text-white font-semibold py-2.5 px-5 rounded-xl transition-colors shadow-md text-sm">
+                <i data-lucide="{% if object %}save{% else %}plus{% endif %}" class="w-4 h-4"></i>
+                <span>{% if object %}Atualizar Cartão{% else %}Salvar Cartão{% endif %}</span>
+            </button>
         </div>
-    </div>
-    
-    <!-- Quick Tips -->
-    <div class="mt-6 bg-purple-50 rounded-xl p-4 animate-fade-in" style="animation-delay: 0.2s;">
-        <div class="flex items-start space-x-3">
-            <div class="w-6 h-6 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                <i data-lucide="info" class="w-3 h-3 text-purple-600"></i>
-            </div>
-            <div>
-                <h3 class="font-medium text-purple-900 mb-1">Dicas importantes</h3>
-                <p class="text-xs text-purple-700">O dia de fechamento é quando a fatura é gerada. O vencimento é o prazo limite para pagamento.</p>
-            </div>
-        </div>
-    </div>
+    </form>
 </div>
-
-<style>
-/* Custom Form Styling */
-.form-group input,
-.form-group select,
-.form-group textarea {
-    width: 100%;
-    padding: 10px 12px;
-    border: 2px solid #e2e8f0;
-    border-radius: 10px;
-    font-size: 15px;
-    transition: all 0.3s ease;
-    background-color: #f8fafc;
-}
-
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-    outline: none;
-    border-color: #84cc16;
-    background-color: #ffffff;
-    box-shadow: 0 0 0 3px rgba(132, 204, 22, 0.1);
-}
-
-.form-group input[type="number"] {
-    padding-left: 35px;
-}
-
-.form-group select {
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
-    background-position: right 10px center;
-    background-repeat: no-repeat;
-    background-size: 16px;
-    padding-right: 35px;
-    appearance: none;
-}
-</style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Lucide icons
     lucide.createIcons();
-    
-    // Auto-format currency input
     const limiteInput = document.querySelector('input[name="limite"]');
     if (limiteInput) {
         limiteInput.addEventListener('input', function(e) {

@@ -1,40 +1,35 @@
 {% extends 'base.html' %}
-
-{% block title %}Confirmar Exclusão | Ordo{% endblock %}
-
+{% block title %}Confirmar Exclusão - Ordo Finance{% endblock %}
 {% block content %}
-<div class="max-w-md mx-auto mt-10">
-    <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
-        <div class="p-8">
-            <div class="flex justify-center mb-6">
-                <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-                    <i data-lucide="alert-triangle" class="w-8 h-8 text-red-600"></i>
-                </div>
+
+<div class="max-w-sm mx-auto">
+    <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-6 animate-scale-in">
+
+        <div class="flex items-center space-x-3 mb-4">
+            <div class="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <i data-lucide="trash-2" class="w-5 h-5 text-red-600"></i>
             </div>
-
-            <h2 class="text-2xl font-bold text-center text-gray-800 mb-4">Confirmar Exclusão</h2>
-
-            <p class="text-center text-gray-600 mb-8">
-                Tem certeza que deseja excluir {{ type }}
-                <span class="font-semibold text-gray-800">"{{ object }}"</span>?
-                <br>
-                <span class="text-sm text-red-500 mt-2 block">Esta ação não pode ser desfeita.</span>
-            </p>
-
-            <form method="post" class="space-y-4">
-                {% csrf_token %}
-                <div class="flex space-x-4">
-                    <a href="javascript:history.back()"
-                        class="flex-1 flex justify-center items-center px-4 py-3 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors">
-                        Cancelar
-                    </a>
-                    <button type="submit"
-                        class="flex-1 flex justify-center items-center px-4 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors shadow-lg shadow-red-200">
-                        Sim, Excluir
-                    </button>
-                </div>
-            </form>
+            <div>
+                <h2 class="font-bold text-dark-800">Confirmar exclusão</h2>
+                <p class="text-dark-500 text-sm">Esta ação não pode ser desfeita.</p>
+            </div>
         </div>
+
+        <p class="text-sm text-dark-700 font-medium mb-5 bg-gray-50 rounded-lg p-3">"{{ object }}"</p>
+
+        <form method="post" class="flex items-center justify-end space-x-2">
+            {% csrf_token %}
+            <a href="javascript:history.back()"
+                class="px-4 py-2 text-sm font-medium text-dark-600 hover:text-dark-800 hover:bg-gray-100 rounded-lg transition-colors">
+                Cancelar
+            </a>
+            <button type="submit"
+                class="flex items-center space-x-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                <span>Excluir</span>
+            </button>
+        </form>
     </div>
 </div>
+
 {% endblock %}

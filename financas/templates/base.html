@@ -7,15 +7,15 @@
     {% include "includes/head.html" %}
 </head>
 
-<body class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-800 font-sans text-dark-800 dark:text-slate-200">
+<body class="h-screen flex flex-col overflow-hidden bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-800 font-sans text-dark-800 dark:text-slate-200">
     {% if user.is_authenticated %}
     {% include "includes/navbar.html" %}
     {% endif %}
 
-    <main class="{% if user.is_authenticated %}max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8{% else %}p-6{% endif %}">
-        {% block content %}
-        <!-- O conteúdo de outras páginas será inserido aqui. -->
-        {% endblock %}
+    <main class="flex-1 overflow-y-auto {% if not user.is_authenticated %}flex items-center justify-center{% endif %}">
+        <div class="{% if user.is_authenticated %}px-4 sm:px-6 lg:px-8 py-5{% endif %}">
+            {% block content %}{% endblock %}
+        </div>
     </main>
 
     {% include "includes/scripts.html" %}

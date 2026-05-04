@@ -1,201 +1,98 @@
 {% extends "base.html" %}
-{% block title %}Login - Ordo{% endblock %}
+{% block title %}Login - Ordo Finance{% endblock %}
 {% block content %}
 
-<div class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-md w-full space-y-8">
-        
-        <!-- Logo and Brand -->
-        <div class="text-center animate-fade-in">
-            <div class="w-20 h-20 bg-primary-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                <i data-lucide="trending-up" class="w-10 h-10 text-white"></i>
-            </div>
-            <h1 class="text-4xl font-bold bg-gradient-to-r from-primary-600 to-primary-500 bg-clip-text text-transparent mb-2">
-                ORDO
-            </h1>
-            <p class="text-dark-500 text-lg">Controle Financeiro Inteligente</p>
+<div class="max-w-md w-full px-4 space-y-6">
+
+    <!-- Logo -->
+    <div class="text-center animate-fade-in">
+        <div class="w-16 h-16 bg-primary-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" class="w-8 h-8" fill="none">
+                <polyline points="6,22 12,14 18,18 26,8" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
         </div>
+        <h1 class="text-3xl font-bold bg-gradient-to-r from-primary-600 to-primary-500 bg-clip-text text-transparent">Ordo Finance</h1>
+        <p class="text-dark-500 text-sm mt-1">Controle Financeiro Inteligente</p>
+    </div>
 
-        <!-- Login Form -->
-        <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden animate-slide-up">
-            
-            <!-- Form Header -->
-            <div class="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-5">
-                <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                        <i data-lucide="lock" class="w-5 h-5 text-white"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-lg font-bold text-white">Acesse sua conta</h2>
-                        <p class="text-sm text-primary-100">Entre com suas credenciais</p>
-                    </div>
+    <!-- Card -->
+    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden animate-slide-up">
+
+        <div class="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center">
+                    <i data-lucide="lock" class="w-4 h-4 text-white"></i>
                 </div>
-            </div>
-
-            <!-- Form Content -->
-            <div class="p-6">
-                <!-- Error Message -->
-                {% if form.errors %}
-                <div class="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 animate-scale-in">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <i data-lucide="alert-circle" class="w-4 h-4 text-red-600"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-medium text-red-900">Erro de autenticação</h3>
-                            <p class="text-sm text-red-700 mt-1">Usuário ou senha incorretos. Tente novamente.</p>
-                        </div>
-                    </div>
+                <div>
+                    <h2 class="font-bold text-white">Acesse sua conta</h2>
+                    <p class="text-xs text-primary-100">Entre com suas credenciais</p>
                 </div>
-                {% endif %}
-
-                <form method="post" action="{% url 'login' %}">
-                    {% csrf_token %}
-                    
-                    <div class="space-y-5">
-                        
-                        <!-- Username Field -->
-                        <div class="form-group">
-                            <label for="id_username" class="flex items-center space-x-2 text-dark-700 font-medium mb-2">
-                                <i data-lucide="user" class="w-4 h-4"></i>
-                                <span>Usuário</span>
-                            </label>
-                            <input type="text" 
-                                   name="username" 
-                                   autofocus 
-                                   autocapitalize="none" 
-                                   autocomplete="username"
-                                   maxlength="150" 
-                                   required 
-                                   id="id_username"
-                                   class="login-input"
-                                   placeholder="Digite seu usuário">
-                        </div>
-                        
-                        <!-- Password Field -->
-                        <div class="form-group">
-                            <label for="id_password" class="flex items-center space-x-2 text-dark-700 font-medium mb-2">
-                                <i data-lucide="lock" class="w-4 h-4"></i>
-                                <span>Senha</span>
-                            </label>
-                            <div class="relative">
-                                <input type="password" 
-                                       name="password" 
-                                       autocomplete="current-password" 
-                                       required 
-                                       id="id_password"
-                                       class="login-input pr-12"
-                                       placeholder="Digite sua senha">
-                                <button type="button" 
-                                        onclick="togglePassword()" 
-                                        class="absolute right-3 top-1/2 transform -translate-y-1/2 text-dark-400 hover:text-dark-600 transition-colors">
-                                    <i data-lucide="eye" id="eye-icon" class="w-4 h-4"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Login Button -->
-                    <div class="mt-8">
-                        <button type="submit" 
-                                class="w-full flex items-center justify-center space-x-2 bg-primary-500 hover:bg-primary-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105">
-                            <i data-lucide="log-in" class="w-5 h-5"></i>
-                            <span>Entrar no Sistema</span>
-                        </button>
-                    </div>
-                </form>
             </div>
         </div>
 
-        <!-- Additional Info -->
-        <div class="text-center animate-fade-in" style="animation-delay: 0.3s;">
-            <div class="bg-blue-50 rounded-xl p-4">
-                <div class="flex items-center justify-center space-x-2 text-blue-700">
-                    <i data-lucide="shield-check" class="w-4 h-4"></i>
-                    <span class="text-sm font-medium">Acesso seguro e protegido</span>
-                </div>
+        <div class="p-6">
+            {% if form.errors %}
+            <div class="mb-4 bg-red-50 border border-red-200 rounded-xl p-3 flex items-center space-x-3">
+                <i data-lucide="alert-circle" class="w-4 h-4 text-red-600 flex-shrink-0"></i>
+                <p class="text-sm text-red-700">Usuário ou senha incorretos. Tente novamente.</p>
             </div>
+            {% endif %}
+
+            <form method="post" action="{% url 'login' %}">
+                {% csrf_token %}
+                <div class="space-y-4">
+                    <div class="form-group">
+                        <label for="id_username" class="flex items-center space-x-2 text-dark-700 font-medium mb-1.5 text-sm">
+                            <i data-lucide="user" class="w-4 h-4"></i>
+                            <span>Usuário</span>
+                        </label>
+                        <input type="text" name="username" autofocus autocapitalize="none"
+                               autocomplete="username" maxlength="150" required id="id_username"
+                               class="login-input" placeholder="Digite seu usuário">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="id_password" class="flex items-center space-x-2 text-dark-700 font-medium mb-1.5 text-sm">
+                            <i data-lucide="lock" class="w-4 h-4"></i>
+                            <span>Senha</span>
+                        </label>
+                        <div class="relative">
+                            <input type="password" name="password" autocomplete="current-password"
+                                   required id="id_password" class="login-input pr-12"
+                                   placeholder="Digite sua senha">
+                            <button type="button" onclick="togglePassword()"
+                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-dark-600 transition-colors">
+                                <i data-lucide="eye" id="eye-icon" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-5">
+                    <button type="submit"
+                            class="w-full flex items-center justify-center space-x-2 bg-primary-500 hover:bg-primary-600 text-white font-semibold py-2.5 px-4 rounded-xl transition-all duration-150 shadow-md hover:shadow-lg">
+                        <i data-lucide="log-in" class="w-4 h-4"></i>
+                        <span>Entrar</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="text-center">
+        <div class="inline-flex items-center space-x-2 text-dark-500 bg-gray-100 rounded-xl px-4 py-2">
+            <i data-lucide="shield-check" class="w-4 h-4"></i>
+            <span class="text-sm font-medium">Acesso seguro e protegido</span>
         </div>
     </div>
 </div>
 
-<style>
-/* Login specific styles */
-.login-input {
-    width: 100%;
-    padding: 12px 16px;
-    border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    font-size: 15px;
-    transition: all 0.3s ease;
-    background-color: #f8fafc;
-}
-
-.login-input:focus {
-    outline: none;
-    border-color: #84cc16;
-    background-color: #ffffff;
-    box-shadow: 0 0 0 3px rgba(132, 204, 22, 0.1);
-}
-
-.login-input::placeholder {
-    color: #94a3b8;
-}
-
-/* Remove default form styling from base when not authenticated */
-body:not(.authenticated) nav {
-    display: none;
-}
-
-body:not(.authenticated) main {
-    padding: 0;
-    max-width: none;
-    margin: 0;
-}
-
-/* Override background for login page */
-body:not(.authenticated) {
-    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 50%, #f1f5f9 100%);
-}
-</style>
-
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Lucide icons
-    lucide.createIcons();
-    
-    // Add body class to handle unauthenticated state
-    if (!document.querySelector('nav')) {
-        document.body.classList.add('unauthenticated');
-    }
-    
-    // Focus animation for inputs
-    const inputs = document.querySelectorAll('.login-input');
-    inputs.forEach(input => {
-        input.addEventListener('focus', function() {
-            this.parentElement.style.transform = 'translateY(-2px)';
-        });
-        
-        input.addEventListener('blur', function() {
-            this.parentElement.style.transform = 'translateY(0)';
-        });
-    });
-});
-
-// Toggle password visibility
 function togglePassword() {
-    const passwordField = document.getElementById('id_password');
-    const eyeIcon = document.getElementById('eye-icon');
-    
-    if (passwordField.type === 'password') {
-        passwordField.type = 'text';
-        eyeIcon.setAttribute('data-lucide', 'eye-off');
-    } else {
-        passwordField.type = 'password';
-        eyeIcon.setAttribute('data-lucide', 'eye');
-    }
-    
-    // Reinitialize the icon
+    const field = document.getElementById('id_password');
+    const icon = document.getElementById('eye-icon');
+    field.type = field.type === 'password' ? 'text' : 'password';
+    icon.setAttribute('data-lucide', field.type === 'password' ? 'eye' : 'eye-off');
     lucide.createIcons();
 }
 </script>

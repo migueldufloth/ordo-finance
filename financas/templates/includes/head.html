@@ -1,8 +1,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{% block title %}Ordo{% endblock %}</title>
+<title>{% block title %}Ordo Finance{% endblock %}</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230c7a4e'/%3E%3Cpolyline points='6,22 12,14 18,18 26,8' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E">
 
-<!-- Google Fonts - Inter para modernidade -->
+<!-- Google Fonts - Inter -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -24,16 +25,16 @@
             extend: {
                 colors: {
                     primary: {
-                        50: '#f7fee7',
-                        100: '#ecfccb',
-                        200: '#d9f99d',
-                        300: '#bef264',
-                        400: '#a3e635',
-                        500: '#84cc16',
-                        600: '#65a30d',
-                        700: '#4d7c0f',
-                        800: '#365314',
-                        900: '#1a2e05',
+                        50:  '#edfaf4',
+                        100: '#d1f5e4',
+                        200: '#a5ebcb',
+                        300: '#6dd9a9',
+                        400: '#33be82',
+                        500: '#0c7a4e',
+                        600: '#0a6240',
+                        700: '#084d33',
+                        800: '#063d27',
+                        900: '#042f1d',
                     },
                     success: '#22c55e',
                     danger: '#ef4444',
@@ -57,21 +58,21 @@
                     'display': ['Inter', 'system-ui', 'sans-serif'],
                 },
                 animation: {
-                    'fade-in': 'fadeIn 0.5s ease-out',
-                    'slide-up': 'slideUp 0.3s ease-out',
-                    'scale-in': 'scaleIn 0.2s ease-out',
+                    'fade-in': 'fadeIn 0.15s ease-out',
+                    'slide-up': 'slideUp 0.15s ease-out',
+                    'scale-in': 'scaleIn 0.1s ease-out',
                 },
                 keyframes: {
                     fadeIn: {
-                        '0%': { opacity: '0', transform: 'translateY(10px)' },
+                        '0%': { opacity: '0', transform: 'translateY(4px)' },
                         '100%': { opacity: '1', transform: 'translateY(0)' }
                     },
                     slideUp: {
-                        '0%': { transform: 'translateY(20px)', opacity: '0' },
+                        '0%': { transform: 'translateY(8px)', opacity: '0' },
                         '100%': { transform: 'translateY(0)', opacity: '1' }
                     },
                     scaleIn: {
-                        '0%': { transform: 'scale(0.95)', opacity: '0' },
+                        '0%': { transform: 'scale(0.98)', opacity: '0' },
                         '100%': { transform: 'scale(1)', opacity: '1' }
                     }
                 }
@@ -91,34 +92,13 @@
         border-bottom: 1px solid rgba(255, 255, 255, 0.2);
     }
 
-    .card-hover {
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .card-hover:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    }
-
-    .income-gradient {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    }
-
-    .expense-gradient {
-        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    }
-
-    .balance-gradient {
-        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-    }
-
-    /* Gradientes dos cards originais modernizados */
+    /* Gradientes dos cartões de crédito */
     .card-gradient-blue {
         background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
     }
 
     .card-gradient-green {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        background: linear-gradient(135deg, #0c7a4e 0%, #042f1d 100%);
     }
 
     .card-gradient-red {
@@ -141,16 +121,50 @@
         background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
     }
 
+    /* ── Light mode ─────────────────────────────────────────── */
+    html:not(.dark) body {
+        background: linear-gradient(135deg, #e8edf4 0%, #f5f7fa 50%, #eaeff7 100%);
+    }
+    html:not(.dark) .nav-blur {
+        background: rgba(255, 255, 255, 0.92);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    }
+    html:not(.dark) .bg-white          { background-color: #ffffff !important; }
+    html:not(.dark) .bg-gray-50        { background-color: #f0f4f8 !important; }
+    html:not(.dark) .bg-gray-100       { background-color: #e4e9f0 !important; }
+    html:not(.dark) .bg-dark-100       { background-color: #edf0f5 !important; }
+    html:not(.dark) .hover\:bg-dark-200:hover { background-color: #dde3ec !important; }
+    html:not(.dark) .hover\:bg-gray-50:hover  { background-color: #f0f4f8 !important; }
+
+    html:not(.dark) .border-gray-100,
+    html:not(.dark) .border-gray-200   { border-color: #dde3ec !important; }
+    html:not(.dark) .divide-gray-100 > * + *,
+    html:not(.dark) .divide-gray-200 > * + * { border-color: #dde3ec !important; }
+
+    html:not(.dark) .shadow-md {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+    }
+    html:not(.dark) .shadow-lg,
+    html:not(.dark) .shadow-xl {
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10), 0 2px 6px rgba(0, 0, 0, 0.06) !important;
+    }
+
+    html:not(.dark) .text-dark-800,
+    html:not(.dark) .text-dark-700     { color: #1a2332 !important; }
+    html:not(.dark) .text-dark-600     { color: #2d3f55 !important; }
+    html:not(.dark) .text-dark-500,
+    html:not(.dark) .text-dark-400     { color: #5a7090 !important; }
+
     /* ── Dark mode ─────────────────────────────────────────── */
     .dark { color-scheme: dark; }
 
-    /* Navegação */
     .dark .nav-blur {
         background: rgba(18, 18, 18, 0.92);
         border-bottom: 1px solid rgba(255,255,255,0.07);
     }
 
-    /* Superfícies — zinc neutro, sem tint azul */
+    /* Superfícies */
     .dark .bg-white        { background-color: #1c1c1c !important; }
     .dark .bg-gray-50      { background-color: #111111 !important; }
     .dark .bg-gray-100     { background-color: #2a2a2a !important; }
@@ -177,14 +191,14 @@
     .dark .text-gray-600   { color: #a0a0a0 !important; }
     .dark .text-gray-400   { color: #6e6e6e !important; }
 
-    /* Primary */
+    /* Primary — verde floresta em dark mode */
     .dark .bg-primary-50,
-    .dark .bg-primary-100  { background-color: #1a2e05 !important; }
+    .dark .bg-primary-100  { background-color: #061f10 !important; }
     .dark .text-primary-600,
-    .dark .text-primary-700 { color: #a3e635 !important; }
-    .dark .text-primary-800 { color: #84cc16 !important; }
+    .dark .text-primary-700 { color: #33be82 !important; }
+    .dark .text-primary-800 { color: #6dd9a9 !important; }
 
-    /* Verde */
+    /* Verde (indicadores de receita) */
     .dark .bg-green-100    { background-color: #052e16 !important; }
     .dark .hover\:bg-green-100:hover { background-color: #052e16 !important; }
     .dark .hover\:bg-green-200:hover { background-color: #14532d !important; }
@@ -207,7 +221,6 @@
     .dark .text-blue-600,
     .dark .text-blue-700   { color: #60a5fa !important; }
     .dark .text-blue-900   { color: #bfdbfe !important; }
-    .dark .text-blue-700.text-xs { color: #93c5fd !important; }
 
     /* Roxo */
     .dark .bg-purple-50    { background-color: #1e1040 !important; }
@@ -228,7 +241,8 @@
     .dark .form-group select:focus,
     .dark .form-group textarea:focus {
         background-color: #1c1c1c !important;
-        border-color: #84cc16 !important;
+        border-color: #33be82 !important;
+        box-shadow: 0 0 0 3px rgba(51, 190, 130, 0.15) !important;
     }
     .dark .form-group input::placeholder { color: #6e6e6e !important; }
 
@@ -248,6 +262,56 @@
     .dark .shadow-xl {
         box-shadow: 0 10px 25px -5px rgba(0,0,0,0.6), 0 4px 10px -2px rgba(0,0,0,0.4) !important;
     }
+
+    /* ── Formulários globais ────────────────────────────────── */
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        padding: 10px 12px;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        font-size: 15px;
+        transition: all 0.3s ease;
+        background-color: #f8fafc;
+        color: #1e293b;
+    }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #0c7a4e;
+        background-color: #ffffff;
+        box-shadow: 0 0 0 3px rgba(12, 122, 78, 0.12);
+    }
+    .form-group input[type="number"] { padding-left: 35px; }
+    .form-group select {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 10px center;
+        background-repeat: no-repeat;
+        background-size: 16px;
+        padding-right: 35px;
+        appearance: none;
+    }
+
+    /* Login */
+    .login-input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        font-size: 15px;
+        transition: all 0.3s ease;
+        background-color: #f8fafc;
+        color: #1e293b;
+    }
+    .login-input:focus {
+        outline: none;
+        border-color: #0c7a4e;
+        background-color: #ffffff;
+        box-shadow: 0 0 0 3px rgba(12, 122, 78, 0.12);
+    }
+    .login-input::placeholder { color: #94a3b8; }
 </style>
 
 <script>

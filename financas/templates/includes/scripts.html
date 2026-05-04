@@ -1,5 +1,4 @@
 <script>
-    // Theme Management
     function setTheme(theme) {
         localStorage.setItem('theme', theme);
         applyTheme(theme);
@@ -7,58 +6,41 @@
 
     function applyTheme(theme) {
         const html = document.documentElement;
-        const themeIcon = document.getElementById('theme-icon');
-        const mobileThemeIcon = document.getElementById('mobile-theme-icon');
+        const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
-        if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        if (isDark) {
             html.classList.add('dark');
-            if (themeIcon) themeIcon.setAttribute('data-lucide', 'moon');
-            if (mobileThemeIcon) mobileThemeIcon.setAttribute('data-lucide', 'moon');
         } else {
             html.classList.remove('dark');
-            if (themeIcon) themeIcon.setAttribute('data-lucide', 'sun');
-            if (mobileThemeIcon) mobileThemeIcon.setAttribute('data-lucide', 'sun');
         }
 
-        // Update icons
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
+        // Ícone reflete a preferência escolhida, não o resultado
+        const iconName = theme === 'system' ? 'monitor' : theme === 'dark' ? 'moon' : 'sun';
+        ['theme-icon', 'mobile-theme-icon'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.setAttribute('data-lucide', iconName);
+        });
+
+        if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 
-    // Language Management
-    function setLanguage(lang) {
-        localStorage.setItem('language', lang);
-        // Here you would implement language switching logic
-        // For now, just show a notification
-        showNotification(`Idioma alterado para: ${lang === 'pt-br' ? 'Português' : lang === 'en' ? 'English' : 'Español'}`);
-    }
-
-    // Simple notification function
     function showNotification(message) {
         const notification = document.createElement('div');
         notification.className = 'fixed top-4 right-4 bg-primary-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-fade-in';
         notification.textContent = message;
         document.body.appendChild(notification);
-
-        setTimeout(() => {
-            notification.remove();
-        }, 3000);
+        setTimeout(() => notification.remove(), 3000);
     }
 
-    // Initialize theme on page load
     document.addEventListener('DOMContentLoaded', function () {
-        // Initialize Lucide icons
         lucide.createIcons();
 
-        // Apply saved theme or system preference
         const savedTheme = localStorage.getItem('theme') || 'system';
         applyTheme(savedTheme);
 
-        // Listen for system theme changes
+        // Atualiza automaticamente quando o SO muda a preferência
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-            const currentTheme = localStorage.getItem('theme') || 'system';
-            if (currentTheme === 'system') {
+            if ((localStorage.getItem('theme') || 'system') === 'system') {
                 applyTheme('system');
             }
         });
