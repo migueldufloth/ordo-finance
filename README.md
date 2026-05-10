@@ -14,21 +14,7 @@ A aplicação permite controle de receitas e despesas, categorização de lança
 
 Visão de alto nível: quem usa o sistema e com o que ele se comunica.
 
-```mermaid
-flowchart TD
-    classDef person fill:#08427B,stroke:#66B2FF,stroke-width:2px,color:#fff;
-    classDef system fill:#1168BD,stroke:#66B2FF,stroke-width:2px,color:#fff;
-    classDef db fill:#2D882D,stroke:#55FF55,stroke-width:2px,color:#fff;
-
-    User(["<b>👤 Usuário</b><br/><span style='font-size:12px; color:#ddd'>Controla receitas, despesas e cartões<br/>de crédito pelo navegador</span>"]):::person
-    Ordo["<b>⚙️ Ordo Finance</b><br/><span style='font-size:12px; color:#ddd'>Aplicação web de gestão financeira pessoal<br/>hospedada na Oracle Cloud via Docker Compose</span>"]:::system
-    DB[("<b>🗄️ PostgreSQL</b><br/><span style='font-size:12px; color:#ddd'>Banco de dados em container<br/>com volume persistente</span>")]:::db
-
-    User -- "Acessa via HTTP" --> Ordo
-    Ordo -- "Lê e grava dados" --> DB
-
-    linkStyle default stroke:#66B2FF,stroke-width:2px,color:#E0E0E0,font-size:13px;
-```
+![C4 Nível 1 — Contexto](docs/diagramas/png/c1_contexto.png)
 
 ---
 
@@ -36,156 +22,31 @@ flowchart TD
 
 Decomposição dos serviços que compõem o sistema em produção.
 
-```mermaid
-flowchart LR
-    classDef person fill:#08427B,stroke:#66B2FF,stroke-width:2px,color:#fff;
-    classDef container fill:#1168BD,stroke:#66B2FF,stroke-width:2px,color:#fff;
-    classDef db fill:#2D882D,stroke:#55FF55,stroke-width:2px,color:#fff;
-    classDef boundary fill:transparent,stroke:#888,stroke-dasharray: 5 5,color:#ccc,font-weight:bold;
-
-    User(["<b>👤 Usuário</b><br/><span style='font-size:12px; color:#ddd'>Acessa a interface web<br/>pelo navegador</span>"]):::person
-
-    subgraph Oracle ["☁️ Oracle Cloud — Always Free VM"]
-        direction TB
-        Web["<b>🖥️ App Principal</b><br/><span style='font-size:12px; color:#99CCFF'>[Django 5 · Gunicorn · WhiteNoise]</span><br/><span style='font-size:12px; color:#ddd'>Monolito SSR. Gerencia autenticação,<br/>transações, cartões e categorias.</span>"]:::container
-        API["<b>⚙️ Microserviço de Relatórios</b><br/><span style='font-size:12px; color:#99CCFF'>[FastAPI · Uvicorn]</span><br/><span style='font-size:12px; color:#ddd'>Serviço isolado para geração<br/>de PDFs. Planejado.</span>"]:::container
-        DB[("<b>🗄️ PostgreSQL</b><br/><span style='font-size:12px; color:#99CCFF'>[Container · Volume Persistente]</span><br/><span style='font-size:12px; color:#ddd'>Armazena usuários, transações,<br/>categorias e cartões.</span>")]:::db
-        Web -- "Delega geração de PDF<br/>[REST / HTTP]" --> API
-        Web -- "Consulta e persiste<br/>[Django ORM]" --> DB
-        API -- "Agrega relatórios [SQL]" --> DB
-    end
-    class Oracle boundary;
-
-    User -- "Navega [HTTP]" --> Web
-
-    linkStyle default stroke:#66B2FF,stroke-width:2px,color:#E0E0E0,font-size:13px;
-```
+![C4 Nível 2 — Containers](docs/diagramas/png/c2_containers.png)
 
 ---
 
-### Nível 3: Componentes
+### Nível 3: Componentes — App Django
 
 Estrutura interna do monolito Django, mapeando os arquivos reais do repositório.
 
-```mermaid
-flowchart LR
-    classDef person fill:#08427B,stroke:#66B2FF,stroke-width:2px,color:#fff;
-    classDef comp fill:#4A90D9,stroke:#99CCFF,stroke-width:2px,color:#fff;
-    classDef compAlt fill:#D4820A,stroke:#FFB266,stroke-width:2px,color:#fff;
-    classDef db fill:#2D882D,stroke:#55FF55,stroke-width:2px,color:#fff;
-    classDef boundary fill:transparent,stroke:#888,stroke-dasharray: 5 5,color:#ccc,font-weight:bold;
+![C4 Nível 3 — Componentes Django](docs/diagramas/png/c3_componentes_django.png)
 
-    User(["<b>👤 Usuário autenticado</b><br/><span style='font-size:12px; color:#ddd'>Interage com as páginas<br/>da aplicação</span>"]):::person
-    DB[("<b>🗄️ PostgreSQL</b><br/><span style='font-size:12px; color:#ddd'>Container · Oracle Cloud</span>")]:::db
+### Nível 3: Componentes — Microserviço FastAPI
 
-    subgraph App ["📦 App Principal — financas/"]
-        direction TB
-        Auth["<b>🔐 Autenticação</b><br/><span style='font-size:12px; color:#cce5ff'>[contrib.auth]</span><br/><span style='font-size:12px; color:#eee'>Decorators @login_required e<br/>LoginRequiredMixin. Isola<br/>sessão por usuário.</span>"]:::comp
-        Views["<b>🎛️ Views</b><br/><span style='font-size:12px; color:#cce5ff'>[FBV + CBV · views.py]</span><br/><span style='font-size:12px; color:#eee'>dashboard, lista_transacoes, adicionar,<br/>editar, remover. CBVs para<br/>CartaoCredito e Categoria.</span>"]:::comp
-        Forms["<b>📝 Formulários</b><br/><span style='font-size:12px; color:#cce5ff'>[Django Forms]</span><br/><span style='font-size:12px; color:#eee'>TransacaoForm, CartaoCreditoForm<br/>e CategoriaForm. Querysets<br/>filtrados por usuário.</span>"]:::comp
-        Templates["<b>🎨 Templates</b><br/><span style='font-size:12px; color:#ffe6cc'>[Tailwind · Alpine.js]</span><br/><span style='font-size:12px; color:#eee'>base.html, dashboard, lista_transacoes<br/>e formulários de CRUD.</span>"]:::compAlt
-        Models["<b>📊 Modelos</b><br/><span style='font-size:12px; color:#cce5ff'>[Django ORM]</span><br/><span style='font-size:12px; color:#eee'>Transacao, CartaoCredito e Categoria.<br/>Todos isolados por FK do usuário.</span>"]:::comp
+Estrutura interna do microserviço de geração de PDFs.
 
-        Auth  -- "Permite acesso"  --> Views
-        Views -- "Valida POST"     --> Forms
-        Views -- "Renderiza HTML"  --> Templates
-        Views -- "Consulta dados"  --> Models
-        Forms -- "Cria e atualiza" --> Models
-    end
-    class App boundary;
-
-    User   -- "Requisição HTTP"  --> Auth
-    Models -- "ORM · psycopg2"   --> DB
-
-    linkStyle default stroke:#66B2FF,stroke-width:2px,color:#E0E0E0,font-size:13px;
-```
+![C4 Nível 3 — Componentes FastAPI](docs/diagramas/png/c3_componentes_fastapi.png)
 
 ---
 
-### Modelo de Dados (ER)
+### Modelo de Dados
 
-Estrutura completa das tabelas gerenciadas pelo Django ORM, com todos os campos, tipos e relacionamentos.
+Entidades, atributos tipados, enums e regras de integridade referencial.
 
-```mermaid
-%%{init: {'theme': 'dark', 'themeVariables': { 'fontSize': '16px', 'primaryColor': '#1168BD', 'primaryBorderColor': '#66B2FF', 'lineColor': '#66B2FF', 'fontFamily': 'sans-serif'}}}%%
-erDiagram
-    User ||--o{ Categoria     : "possui"
-    User ||--o{ CartaoCredito : "possui"
-    User ||--o{ Transacao     : "registra"
-
-    Categoria     ||--o{ Transacao : "classifica"
-    CartaoCredito |o--o{ Transacao : "vincula (opcional)"
-
-    User {
-        int    id           PK
-        string username
-        string email
-        string password        "hash"
-        bool   is_active
-    }
-
-    Categoria {
-        int    id           PK
-        int    usuario_id   FK
-        string nome            "max_length=100, unique por usuário"
-    }
-
-    CartaoCredito {
-        int    id               PK
-        int    usuario_id       FK
-        string nome                "max_length=100"
-        decimal limite             "max_digits=10, decimal_places=2"
-        int    dia_fechamento      "1–31"
-        int    dia_vencimento      "1–31"
-        string cor                 "BLUE|GREEN|RED|PURPLE|BLACK|ORANGE|GRAY"
-    }
-
-    Transacao {
-        int    id                   PK
-        int    usuario_id           FK
-        int    categoria_id         FK  "on_delete=PROTECT"
-        int    cartao_credito_id    FK  "nullable, on_delete=CASCADE"
-        date   data
-        string tipo                   "RECEITA|DESPESA"
-        string descricao              "max_length=200"
-        decimal valor                 "max_digits=10, decimal_places=2"
-        bool   fatura_paga            "default=False"
-    }
-```
+![Diagrama de Classes — Modelos](docs/diagramas/png/uml_classes_modelos.png)
 
 > **Regras de integridade:** deletar uma `Categoria` que possui transações é bloqueado (`PROTECT`). Deletar um `CartaoCredito` remove em cascata suas transações vinculadas (`CASCADE`). Deletar um `User` remove em cascata todos os seus dados.
-
----
-
-## Screenshots
-
-### Login
-![Login](imgs/login.png)
-
-### Dashboard
-Exibe receitas e despesas do mês atual, saldo total e os últimos lançamentos registrados.
-
-![Dashboard](imgs/dashboard.png)
-
-### Lançamentos
-Lista completa de transações com data, descrição, categoria, valor e tipo (receita/despesa).
-
-![Lançamentos](imgs/lancamentos.png)
-
-### Novo Lançamento
-Formulário para registrar uma transação com tipo, data, descrição, valor, categoria e cartão de crédito opcional.
-
-![Novo Lançamento](imgs/criar-lancamento.png)
-
-### Cartões de Crédito
-Visualização dos cartões cadastrados com limite, dia de fechamento e vencimento.
-
-![Cartões de Crédito](imgs/cartoes.png)
-
-### Novo Cartão de Crédito
-Formulário para cadastrar um cartão com nome, cor, limite, dia de fechamento e vencimento.
-
-![Novo Cartão](imgs/criar-cartao.png)
 
 ---
 
@@ -350,59 +211,35 @@ ordo-finance/
 
 ---
 
-## Diagramas C4Model (PlantUML)
+## Diagramas Adicionais
 
-Os arquivos `.puml` estão em [`docs/diagramas/`](docs/diagramas/).
-O workflow [Generate Diagrams](.github/workflows/generate-diagrams.yml) regenera os PNGs em `docs/diagramas/png/` automaticamente a cada push que modifique os `.puml`.
+Os arquivos fonte `.puml` estão em [`docs/diagramas/src/`](docs/diagramas/src/).
+O workflow [Generate Diagrams](.github/workflows/generate-diagrams.yml) regenera os PNGs automaticamente a cada push que modifique os `.puml`.
 
-### C4 Nível 1 — Contexto
-
-![C4 Nível 1 — Contexto](docs/diagramas/png/c1_contexto.png)
-
-### C4 Nível 2 — Containers
-
-![C4 Nível 2 — Containers](docs/diagramas/png/c2_containers.png)
-
-### C4 Nível 3 — Componentes (App Django)
-
-![C4 Nível 3 — Componentes Django](docs/diagramas/png/c3_componentes_django.png)
-
-### C4 Nível 3 — Componentes (Microserviço FastAPI)
-
-![C4 Nível 3 — Componentes FastAPI](docs/diagramas/png/c3_componentes_fastapi.png)
-
-### Diagramas de Classes
-
-#### Modelos de Dados
-
-![Classes — Modelos](docs/diagramas/png/uml_classes_modelos.png)
-
-#### Views, Forms e Mixins
+### Diagrama de Classes — Views, Forms e Mixins
 
 ![Classes — Views](docs/diagramas/png/uml_classes_views.png)
 
-#### Schemas FastAPI e Gerador de PDF
+### Diagrama de Classes — Schemas FastAPI
 
 ![Classes — FastAPI](docs/diagramas/png/uml_classes_fastapi.png)
 
-### Diagramas de Sequência
-
-#### Autenticação (Login)
+### Sequência — Autenticação (Login)
 
 ![Sequência — Autenticação](docs/diagramas/png/seq_autenticacao.png)
 
-#### Adicionar Transação
+### Sequência — Adicionar Transação
 
 ![Sequência — Adicionar Transação](docs/diagramas/png/seq_adicionar_transacao.png)
 
-#### Geração de Relatório PDF
+### Sequência — Geração de Relatório PDF
 
 ![Sequência — Relatório PDF](docs/diagramas/png/seq_relatorio_pdf.png)
 
-#### Dashboard
+### Sequência — Dashboard
 
 ![Sequência — Dashboard](docs/diagramas/png/seq_dashboard.png)
 
-#### CI/CD — Deploy Automático
+### Sequência — CI/CD Deploy Automático
 
 ![Sequência — CI/CD](docs/diagramas/png/seq_cicd_deploy.png)
