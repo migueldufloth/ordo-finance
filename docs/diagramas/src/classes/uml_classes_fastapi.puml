@@ -1,0 +1,37 @@
+@startuml uml_classes_fastapi
+skinparam classAttributeIconSize 0
+skinparam classFontSize 12
+hide empty methods
+
+class TransacaoItem <<DTO>> {
+  +data : str
+  +descricao : str
+  +tipo : str
+  +valor : str
+  +categoria : str
+}
+
+class RelatorioRequest <<DTO>> {
+  +usuario : str
+  +transacoes : List[TransacaoItem]
+}
+
+class PDFGenerator <<Service>> {
+  +gerar_pdf(dados: RelatorioRequest) : bytes
+  -_cabecalho(pdf: FPDF, usuario: str) : void
+  -_tabela_header(pdf: FPDF) : void
+  -_tabela_linha(pdf: FPDF, t: TransacaoItem) : void
+  -_totais(pdf: FPDF, receitas: float, despesas: float) : void
+}
+
+class OrdoFinanceAPI <<Service>> {
+  +health_check() : dict
+  +root() : dict
+  +gerar_pdf(dados: RelatorioRequest) : Response
+}
+
+RelatorioRequest "1" *-- "0..*" TransacaoItem : contém
+OrdoFinanceAPI --> RelatorioRequest : recebe via POST /relatorio/pdf
+OrdoFinanceAPI --> PDFGenerator : delega geração
+
+@enduml

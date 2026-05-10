@@ -1,0 +1,65 @@
+@startuml seq_cicd_deploy
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+
+actor "Desenvolvedor" as Dev
+participant "GitHub\n(repositório)" as GitHub
+participant "Actions Runner\nubuntu-latest" as CIRunner
+participant "Self-hosted Runner\nOracle Cloud VM" as CDRunner
+participant "Docker Compose\n(Produção)" as Docker
+database "PostgreSQL\n(container)" as DB
+
+Dev -> GitHub : git push origin main
+activate GitHub
+GitHub -> CIRunner : dispara job "test"\n(on: push to main)
+activate CIRunner
+CIRunner -> CIRunner : pip install -r requirements.txt
+CIRunner -> CIRunner : manage.py check\n(SECRET_KEY=ci-secret)
+CIRunner -> CIRunner : manage.py test financas --verbosity=2
+
+alt testes falham
+  CIRunner --> GitHub : job FAILED — deploy bloqueado
+  deactivate CIRunner
+  GitHub --> Dev : notificação de falha
+  deactivate GitHub
+else testes passam
+  CIRunner --> GitHub : job PASSED
+  deactivate CIRunner
+  GitHub -> CDRunner : dispara job "deploy"\n(needs: test, self-hosted)
+  activate CDRunner
+  CDRunner -> CDRunner : git fetch origin main\ngit pull origin main
+  CDRunner -> CDRunner : git diff $BEFORE HEAD\n(identifica arquivos alterados)
+
+  alt api/ foi modificado
+    CDRunner -> Docker : build api
+    activate Docker
+    Docker --> CDRunner : api image rebuilt
+    deactivate Docker
+  end
+
+  CDRunner -> Docker : build web
+  activate Docker
+  Docker --> CDRunner : web image rebuilt
+  deactivate Docker
+
+  CDRunner -> Docker : docker compose up -d
+  activate Docker
+  Docker --> CDRunner : containers up
+  deactivate Docker
+
+  CDRunner -> Docker : exec web manage.py migrate --noinput
+  activate Docker
+  Docker -> DB : aplica migrations pendentes
+  activate DB
+  DB --> Docker : migrations OK
+  deactivate DB
+  Docker --> CDRunner : migrate concluído
+  deactivate Docker
+
+  CDRunner --> GitHub : job PASSED
+  deactivate CDRunner
+  GitHub --> Dev : deploy concluído com sucesso
+  deactivate GitHub
+end
+
+@enduml

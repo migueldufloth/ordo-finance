@@ -347,3 +347,62 @@ ordo-finance/
 ├── entrypoint.sh               # migrate + collectstatic + gunicorn
 └── requirements.txt
 ```
+
+---
+
+## Diagramas C4Model (PlantUML)
+
+Os arquivos `.puml` estão em [`docs/diagramas/`](docs/diagramas/).
+O workflow [Generate Diagrams](.github/workflows/generate-diagrams.yml) regenera os PNGs em `docs/diagramas/png/` automaticamente a cada push que modifique os `.puml`.
+
+### C4 Nível 1 — Contexto
+
+![C4 Nível 1 — Contexto](docs/diagramas/png/c1_contexto.png)
+
+### C4 Nível 2 — Containers
+
+![C4 Nível 2 — Containers](docs/diagramas/png/c2_containers.png)
+
+### C4 Nível 3 — Componentes (App Django)
+
+![C4 Nível 3 — Componentes Django](docs/diagramas/png/c3_componentes_django.png)
+
+### C4 Nível 3 — Componentes (Microserviço FastAPI)
+
+![C4 Nível 3 — Componentes FastAPI](docs/diagramas/png/c3_componentes_fastapi.png)
+
+### Diagramas de Classes
+
+#### Modelos de Dados
+
+![Classes — Modelos](docs/diagramas/png/uml_classes_modelos.png)
+
+#### Views, Forms e Mixins
+
+![Classes — Views](docs/diagramas/png/uml_classes_views.png)
+
+#### Schemas FastAPI e Gerador de PDF
+
+![Classes — FastAPI](docs/diagramas/png/uml_classes_fastapi.png)
+
+### Diagramas de Sequência
+
+#### Autenticação (Login)
+
+![Sequência — Autenticação](docs/diagramas/png/seq_autenticacao.png)
+
+#### Adicionar Transação
+
+![Sequência — Adicionar Transação](docs/diagramas/png/seq_adicionar_transacao.png)
+
+#### Geração de Relatório PDF
+
+![Sequência — Relatório PDF](docs/diagramas/png/seq_relatorio_pdf.png)
+
+#### Dashboard
+
+![Sequência — Dashboard](docs/diagramas/png/seq_dashboard.png)
+
+#### CI/CD — Deploy Automático
+
+![Sequência — CI/CD](docs/diagramas/png/seq_cicd_deploy.png)

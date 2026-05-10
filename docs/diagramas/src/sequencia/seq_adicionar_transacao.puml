@@ -1,0 +1,72 @@
+@startuml seq_adicionar_transacao
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+
+actor "Usuário\n(Navegador)" as Browser
+participant "Django\nURL Router" as Router
+participant "@login_required\nAuthMiddleware" as Auth
+participant "adicionar_transacao\n(FBV — views.py)" as View
+participant "TransacaoForm\n(forms.py)" as Form
+participant "Transacao\n(models.py)" as Model
+database "PostgreSQL" as DB
+
+Browser -> Router : GET /transacoes/adicionar/
+activate Router
+Router -> Auth : verifica sessão
+activate Auth
+
+alt não autenticado
+  Auth --> Browser : 302 Redirect → /accounts/login/
+else autenticado
+  Auth -> View : encaminha request
+  deactivate Auth
+  activate View
+  View -> Form : TransacaoForm(user=request.user)
+  activate Form
+  Form -> DB : SELECT * FROM financas_categoria\nWHERE usuario=user
+  DB --> Form : categorias do usuário
+  Form -> DB : SELECT * FROM financas_cartaocredito\nWHERE usuario=user
+  DB --> Form : cartões do usuário
+  Form --> View : form instanciado
+  deactivate Form
+  View --> Browser : 200 OK — adicionar_transacao.html
+  deactivate View
+  deactivate Router
+
+  Browser -> Router : POST /transacoes/adicionar/\n{data, tipo, descricao, valor,\ncategoria_id, cartao_credito_id, fatura_paga}
+  activate Router
+  Router -> Auth : verifica sessão
+  activate Auth
+  Auth -> View : encaminha POST
+  deactivate Auth
+  activate View
+  View -> Form : TransacaoForm(POST, user=request.user)
+  activate Form
+  Form -> Form : is_valid()
+
+  alt form inválido (campo obrigatório ausente, valor <= 0, categoria inválida)
+    Form --> View : errors dict
+    deactivate Form
+    View --> Browser : 200 OK — form com erros
+    deactivate View
+    deactivate Router
+  else form válido
+    Form --> View : form válido
+    deactivate Form
+    View -> Model : transacao = form.save(commit=False)
+    activate Model
+    View -> Model : transacao.usuario = request.user
+    View -> Model : transacao.save()
+    Model -> DB : INSERT INTO financas_transacao\n(usuario_id, data, tipo, descricao,\nvalor, categoria_id, cartao_credito_id, fatura_paga)
+    activate DB
+    DB --> Model : transacao.id
+    deactivate DB
+    deactivate Model
+    View -> View : messages.success("Lançamento adicionado com sucesso.")
+    View --> Browser : 302 Redirect → /transacoes/
+    deactivate View
+    deactivate Router
+  end
+end
+
+@enduml

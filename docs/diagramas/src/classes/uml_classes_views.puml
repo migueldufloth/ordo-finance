@@ -1,0 +1,99 @@
+@startuml uml_classes_views
+skinparam classAttributeIconSize 0
+skinparam classFontSize 11
+hide empty members
+
+' --- Framework Django (referência) ---
+class LoginRequiredMixin <<Mixin>> { }
+class ListView <<Django>> { }
+class CreateView <<Django>> { }
+class UpdateView <<Django>> { }
+class DeleteView <<Django>> { }
+class ModelForm <<Django>> { }
+
+' --- Mixins do projeto ---
+class BaseCartaoCreditoView <<Mixin>> {
+  +model : CartaoCredito
+  +success_url : str
+  +get_queryset() : QuerySet
+}
+class BaseCategoriaView <<Mixin>> {
+  +model : Categoria
+  +success_url : str
+  +get_queryset() : QuerySet
+}
+BaseCartaoCreditoView --|> LoginRequiredMixin
+BaseCategoriaView --|> LoginRequiredMixin
+
+' --- CBVs CartaoCredito ---
+class CartaoCreditoListView <<View>> { }
+class CartaoCreditoCreateView <<View>> {
+  +form_class : CartaoCreditoForm
+  +form_valid(form) : response
+}
+class CartaoCreditoUpdateView <<View>> {
+  +form_class : CartaoCreditoForm
+  +form_valid(form) : response
+}
+class CartaoCreditoDeleteView <<View>> {
+  +get_context_data(**kwargs) : dict
+}
+CartaoCreditoListView --|> BaseCartaoCreditoView
+CartaoCreditoListView --|> ListView
+CartaoCreditoCreateView --|> BaseCartaoCreditoView
+CartaoCreditoCreateView --|> CreateView
+CartaoCreditoUpdateView --|> BaseCartaoCreditoView
+CartaoCreditoUpdateView --|> UpdateView
+CartaoCreditoDeleteView --|> BaseCartaoCreditoView
+CartaoCreditoDeleteView --|> DeleteView
+
+' --- CBVs Categoria ---
+class CategoriaListView <<View>> { }
+class CategoriaCreateView <<View>> {
+  +form_class : CategoriaForm
+  +form_valid(form) : response
+}
+class CategoriaUpdateView <<View>> {
+  +form_class : CategoriaForm
+  +form_valid(form) : response
+}
+class CategoriaDeleteView <<View>> {
+  +get_context_data(**kwargs) : dict
+}
+CategoriaListView --|> BaseCategoriaView
+CategoriaListView --|> ListView
+CategoriaCreateView --|> BaseCategoriaView
+CategoriaCreateView --|> CreateView
+CategoriaUpdateView --|> BaseCategoriaView
+CategoriaUpdateView --|> UpdateView
+CategoriaDeleteView --|> BaseCategoriaView
+CategoriaDeleteView --|> DeleteView
+
+' --- FBVs (representadas como classes) ---
+class DashboardView <<FBV>> {
+  +dashboard(request) : HttpResponse
+}
+class TransacaoViews <<FBV>> {
+  +lista_transacoes(request) : HttpResponse
+  +adicionar_transacao(request) : HttpResponse
+  +editar_transacao(request, pk) : HttpResponse
+  +remover_transacao(request, pk) : HttpResponse
+  +gerar_relatorio(request) : HttpResponse
+}
+
+' --- Formulários ---
+class TransacaoForm <<Form>> {
+  +campos : [data, tipo, descricao, valor, categoria, cartao_credito, fatura_paga]
+  +__init__(user) : filtra querysets por usuário
+}
+class CartaoCreditoForm <<Form>> {
+  +campos : [nome, cor, limite, dia_fechamento, dia_vencimento]
+}
+class CategoriaForm <<Form>> {
+  +campos : [nome]
+}
+TransacaoForm --|> ModelForm
+CartaoCreditoForm --|> ModelForm
+CategoriaForm --|> ModelForm
+
+@enduml

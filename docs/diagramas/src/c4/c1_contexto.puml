@@ -1,0 +1,16 @@
+@startuml c1_contexto
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+Person(usuarioFinal, "Usuário", "Pessoa física que controla receitas, despesas e\ncartões de crédito pelo navegador.")
+System(ordoFinance, "Ordo Finance", "Aplicação web de gestão financeira pessoal.\nMonolito Django + Microserviço FastAPI.\nHospedado na Oracle Cloud via Docker Compose.")
+System_Ext(sentry, "Sentry", "Rastreamento de erros em produção.\nCaptura exceções com stacktrace completo.")
+System_Ext(betterStack, "Better Stack", "Monitoramento externo de uptime.\nFaz polling HTTP em /health/ periodicamente.")
+System_Ext(githubActions, "GitHub Actions", "Pipeline CI/CD. Executa testes automatizados\ne deploy na Oracle Cloud via self-hosted runner.")
+
+Rel(usuarioFinal, ordoFinance, "Acessa e gerencia finanças", "HTTPS / Navegador")
+Rel(ordoFinance, sentry, "Envia exceções e stacktraces", "HTTPS / SDK Python")
+Rel(betterStack, ordoFinance, "Verifica disponibilidade", "HTTP GET /health/")
+Rel(githubActions, ordoFinance, "Faz deploy automatizado", "SSH / Docker Compose")
+
+LAYOUT_WITH_LEGEND()
+@enduml

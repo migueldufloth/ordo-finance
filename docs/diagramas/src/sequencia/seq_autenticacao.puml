@@ -1,0 +1,56 @@
+@startuml seq_autenticacao
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+
+actor "Usuário\n(Navegador)" as Browser
+participant "Django\nURL Router" as Router
+participant "LoginView\n(django.contrib.auth)" as LoginView
+participant "AuthenticationBackend\n(django.contrib.auth)" as AuthBackend
+participant "SessionMiddleware" as Session
+database "PostgreSQL" as DB
+
+Browser -> Router : GET /accounts/login/
+activate Router
+Router -> LoginView : encaminha requisição
+activate LoginView
+LoginView --> Browser : 200 OK — login.html (CSRF token)
+deactivate Router
+
+Browser -> Router : POST /accounts/login/\n{username, password, csrfmiddlewaretoken}
+activate Router
+Router -> LoginView : encaminha POST
+LoginView -> AuthBackend : authenticate(username, password)
+activate AuthBackend
+AuthBackend -> DB : SELECT * FROM auth_user WHERE username=?
+activate DB
+DB --> AuthBackend : user row
+deactivate DB
+
+alt credenciais válidas
+  AuthBackend --> LoginView : User object
+  deactivate AuthBackend
+  LoginView -> Session : login(request, user)
+  activate Session
+  Session -> DB : INSERT django_session\n(session_key, data, expire_date)
+  DB --> Session : OK
+  Session --> LoginView : sessão criada
+  deactivate Session
+  LoginView --> Browser : 302 Redirect → /
+  deactivate LoginView
+  deactivate Router
+  Browser -> Router : GET /
+  activate Router
+  Router -> LoginView : @login_required → dashboard(request)
+  activate LoginView
+  LoginView --> Browser : 200 OK — dashboard.html
+  deactivate LoginView
+  deactivate Router
+else credenciais inválidas
+  AuthBackend --> LoginView : None
+  deactivate AuthBackend
+  LoginView --> Browser : 200 OK — login.html\n(errors: "Usuário ou senha inválidos")
+  deactivate LoginView
+  deactivate Router
+end
+
+@enduml

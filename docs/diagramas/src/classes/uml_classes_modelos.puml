@@ -1,0 +1,75 @@
+@startuml uml_classes_modelos
+skinparam classAttributeIconSize 0
+skinparam classFontSize 12
+skinparam stereotypeCBackgroundColor #E8F4FF
+hide empty methods
+
+enum TipoTransacao <<Enum>> {
+  RECEITA = "RECEITA"
+  DESPESA = "DESPESA"
+}
+
+enum CorCartao <<Enum>> {
+  AZUL = "BLUE"
+  VERDE = "GREEN"
+  VERMELHO = "RED"
+  ROXO = "PURPLE"
+  PRETO = "BLACK"
+  LARANJA = "ORANGE"
+  CINZA = "GRAY"
+}
+
+class User <<Entity>> {
+  +id : int
+  +username : str
+  +email : str
+  +password : str
+  +is_active : bool
+  +is_staff : bool
+}
+
+class Categoria <<Entity>> {
+  +id : int
+  +usuario_id : int
+  +nome : str
+  --
+  __str__() : str
+  ' unique_together: (usuario, nome)
+}
+
+class CartaoCredito <<Entity>> {
+  +id : int
+  +usuario_id : int
+  +nome : str
+  +limite : Decimal
+  +dia_fechamento : int
+  +dia_vencimento : int
+  +cor : CorCartao
+  --
+  __str__() : str
+}
+
+class Transacao <<Entity>> {
+  +id : int
+  +usuario_id : int
+  +data : date
+  +tipo : TipoTransacao
+  +descricao : str
+  +valor : Decimal
+  +categoria_id : int
+  +cartao_credito_id : int
+  +fatura_paga : bool
+  --
+  __str__() : str
+  ' ordering: [-data]
+}
+
+User "1" --> "0..*" Categoria : possui
+User "1" --> "0..*" CartaoCredito : possui
+User "1" --> "0..*" Transacao : registra
+Categoria "1" --> "0..*" Transacao : classifica\n<<PROTECT>>
+CartaoCredito "0..1" --> "0..*" Transacao : vincula\n<<CASCADE>>
+TipoTransacao <-- Transacao : usa
+CorCartao <-- CartaoCredito : usa
+
+@enduml

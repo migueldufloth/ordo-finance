@@ -1,0 +1,62 @@
+@startuml c3_componentes_django
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+Person(usuarioFinal, "Usuário", "Acessa a interface web.")
+ContainerDb(db, "PostgreSQL 15", "Banco de dados relacional.")
+Container(api, "Microserviço FastAPI", "Geração de PDFs.")
+System_Ext(sentry, "Sentry", "Rastreamento de erros em produção.")
+
+Container_Boundary(web, "App Principal — Django 5 / Gunicorn") {
+  Component(urlRouter, "URL Router", "Django URLconf",
+    "ordo_project/urls.py + financas/urls.py\n17 rotas registradas.")
+  Component(authMiddleware, "Auth Middleware", "django.contrib.auth",
+    "Middleware de sessão. @login_required / LoginRequiredMixin.\nRedireciona para /accounts/login/ se não autenticado.")
+  Component(dashboardView, "Dashboard View", "FBV — views.py",
+    "GET /\nSaldo total, receitas/despesas do mês atual, últimos 5 lançamentos.")
+  Component(transacaoViews, "Transação Views", "FBV — views.py",
+    "GET /transacoes/ (paginado 10/pág)\nGET+POST /transacoes/adicionar/\nGET+POST /transacoes/<pk>/editar/\nGET+POST /transacoes/<pk>/remover/\nGET /transacoes/relatorio/")
+  Component(cartaoViews, "Cartão Views", "CBV — views.py",
+    "BaseCartaoCreditoView (mixin)\nList / Create / Update / Delete\n/transacoes/cartoes/*")
+  Component(categoriaViews, "Categoria Views", "CBV — views.py",
+    "BaseCategoriaView (mixin)\nList / Create / Update / Delete\n/transacoes/categorias/*")
+  Component(healthView, "Health View", "FBV — ordo_project/views.py",
+    "GET /health/\nVerifica banco. Retorna JSON HTTP 200 ou 503.")
+  Component(forms, "Formulários", "Django ModelForms — forms.py",
+    "TransacaoForm (querysets filtrados por usuário)\nCartaoCreditoForm\nCategoriaForm")
+  Component(models, "Modelos ORM", "Django ORM — models.py",
+    "Categoria / CartaoCredito / Transacao\nTodos com FK para User (isolamento por usuário).")
+  Component(templates, "Templates HTML", "Django Templates",
+    "TailwindCSS CDN v3 + Alpine.js v3 + Lucide Icons\nbase.html + 9 templates de feature.")
+  Component(reportClient, "Cliente de Relatório", "requests lib",
+    "POST para REPORTS_API_URL/relatorio/pdf\ntimeout=30s. Retorna PDF como attachment.")
+  Component(staticFiles, "Arquivos Estáticos", "WhiteNoise + Brotli",
+    "Serve CSS, JS e imagens comprimidos com Brotli.\nCompressedManifestStaticFilesStorage.")
+}
+
+Rel(usuarioFinal, urlRouter, "Requisição HTTP", "HTTP/HTTPS")
+Rel(urlRouter, authMiddleware, "Verifica sessão", "internal")
+Rel(authMiddleware, dashboardView, "GET /", "internal")
+Rel(authMiddleware, transacaoViews, "GET/POST /transacoes/*", "internal")
+Rel(authMiddleware, cartaoViews, "GET/POST /transacoes/cartoes/*", "internal")
+Rel(authMiddleware, categoriaViews, "GET/POST /transacoes/categorias/*", "internal")
+Rel(urlRouter, healthView, "GET /health/", "internal")
+Rel(transacaoViews, forms, "Valida dados POST", "internal")
+Rel(cartaoViews, forms, "Valida dados POST", "internal")
+Rel(categoriaViews, forms, "Valida dados POST", "internal")
+Rel(dashboardView, models, "Consulta via ORM", "Django ORM")
+Rel(transacaoViews, models, "CRUD", "Django ORM")
+Rel(cartaoViews, models, "CRUD", "Django ORM")
+Rel(categoriaViews, models, "CRUD", "Django ORM")
+Rel(forms, models, "Cria/atualiza entidades", "Django ORM")
+Rel(dashboardView, templates, "Renderiza HTML", "internal")
+Rel(transacaoViews, templates, "Renderiza HTML", "internal")
+Rel(cartaoViews, templates, "Renderiza HTML", "internal")
+Rel(categoriaViews, templates, "Renderiza HTML", "internal")
+Rel(transacaoViews, reportClient, "Delega PDF", "internal")
+Rel(staticFiles, usuarioFinal, "Entrega assets", "HTTP / Brotli")
+Rel(models, db, "Lê e grava", "SQL / psycopg2")
+Rel(reportClient, api, "Solicita PDF", "HTTP POST /relatorio/pdf")
+Rel_Back(sentry, web, "Recebe exceções", "HTTPS / sentry-sdk")
+
+LAYOUT_WITH_LEGEND()
+@enduml

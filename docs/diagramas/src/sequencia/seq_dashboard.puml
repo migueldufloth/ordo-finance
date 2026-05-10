@@ -1,0 +1,66 @@
+@startuml seq_dashboard
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+
+actor "Usuário\n(Navegador)" as Browser
+participant "Django\nURL Router" as Router
+participant "@login_required\nAuthMiddleware" as Auth
+participant "dashboard\n(FBV — views.py)" as View
+participant "Transacao\n(models.py)" as Model
+database "PostgreSQL" as DB
+
+Browser -> Router : GET /
+activate Router
+Router -> Auth : verifica sessão
+activate Auth
+
+alt não autenticado
+  Auth --> Browser : 302 Redirect → /accounts/login/
+  deactivate Auth
+  deactivate Router
+else autenticado
+  Auth -> View : encaminha request
+  deactivate Auth
+  activate View
+
+  View -> Model : Transacao.objects.filter(usuario=request.user)
+  activate Model
+  Model -> DB : SELECT * FROM financas_transacao\nWHERE usuario_id=?
+  DB --> Model : queryset base
+  deactivate Model
+
+  View -> DB : SELECT SUM(valor) FROM financas_transacao\nWHERE usuario_id=? AND tipo='RECEITA'
+  activate DB
+  DB --> View : total_receitas
+  deactivate DB
+
+  View -> DB : SELECT SUM(valor) FROM financas_transacao\nWHERE usuario_id=? AND tipo='DESPESA'
+  activate DB
+  DB --> View : total_despesas
+  deactivate DB
+
+  View -> View : hoje = timezone.localdate()\n(America/Sao_Paulo)
+
+  View -> DB : SELECT SUM(valor) FROM financas_transacao\nWHERE usuario_id=? AND tipo='RECEITA'\nAND data__year=ano AND data__month=mes
+  activate DB
+  DB --> View : receitas_mes
+  deactivate DB
+
+  View -> DB : SELECT SUM(valor) FROM financas_transacao\nWHERE usuario_id=? AND tipo='DESPESA'\nAND data__year=ano AND data__month=mes
+  activate DB
+  DB --> View : despesas_mes
+  deactivate DB
+
+  View -> DB : SELECT * FROM financas_transacao\nWHERE usuario_id=?\nORDER BY data DESC LIMIT 5
+  activate DB
+  DB --> View : últimos 5 lançamentos
+  deactivate DB
+
+  View -> View : contexto = {\n  saldo_total: total_receitas - total_despesas,\n  receitas_mes, despesas_mes,\n  ultimos_lancamentos\n}
+
+  View --> Browser : 200 OK — dashboard.html\n(saldo, resumo mensal, últimos lançamentos)
+  deactivate View
+  deactivate Router
+end
+
+@enduml

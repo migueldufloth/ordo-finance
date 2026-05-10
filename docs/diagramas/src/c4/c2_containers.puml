@@ -1,0 +1,24 @@
+@startuml c2_containers
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+Person(usuarioFinal, "Usuário", "Acessa a interface web pelo navegador.")
+System_Ext(sentry, "Sentry", "Rastreamento de erros em produção.")
+System_Ext(betterStack, "Better Stack", "Monitoramento externo de uptime.")
+
+System_Boundary(ordoFinance, "Ordo Finance — Oracle Cloud Always Free VM") {
+  Container(web, "App Principal", "Django 5 / Gunicorn / WhiteNoise",
+    "Monolito SSR. Gerencia autenticação, transações, cartões de crédito\ne categorias. Expõe porta 8000.")
+  Container(api, "Microserviço de Relatórios", "FastAPI / Uvicorn / FPDF2",
+    "Geração de PDFs de relatório financeiro.\nExpõe porta 8001 externamente.")
+  ContainerDb(db, "Banco de Dados", "PostgreSQL 15",
+    "Armazena usuários, transações, categorias e cartões.\nVolume persistente.")
+}
+
+Rel(usuarioFinal, web, "Navega e interage", "HTTPS / HTML+CSS+JS")
+Rel(web, api, "Solicita geração de PDF", "HTTP POST /relatorio/pdf (JSON)")
+Rel(web, db, "Lê e persiste dados", "SQL via Django ORM / psycopg2")
+Rel(web, sentry, "Envia exceções", "HTTPS / SDK sentry-sdk")
+Rel(betterStack, web, "Verifica uptime", "HTTP GET /health/")
+
+LAYOUT_WITH_LEGEND()
+@enduml
