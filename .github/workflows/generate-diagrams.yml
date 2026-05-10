@@ -32,13 +32,20 @@ jobs:
           PLANTUML_URL=$(curl -s \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             https://api.github.com/repos/plantuml/plantuml/releases/latest \
-            | grep '"browser_download_url"' \
-            | grep '\.jar"' \
-            | grep -v 'lgpl\|asl\|mit\|pdf' \
-            | head -1 \
-            | cut -d '"' -f 4)
+            | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+skip = ['lgpl', 'asl', 'mit', 'bsd', 'pdf']
+url = next(
+    a['browser_download_url']
+    for a in data['assets']
+    if a['name'].endswith('.jar') and not any(s in a['name'] for s in skip)
+)
+print(url)
+")
           echo "Baixando PlantUML: $PLANTUML_URL"
           curl -L -o plantuml.jar "$PLANTUML_URL"
+          java -jar plantuml.jar -version
 
       - name: Criar diretório de saída
         run: mkdir -p docs/diagramas/png
