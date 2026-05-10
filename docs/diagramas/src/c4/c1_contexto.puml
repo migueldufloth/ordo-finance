@@ -1,5 +1,5 @@
 @startuml c1_contexto
-' C4 Model — Nivel 1 — Contexto
+' C4 Model — Nivel 1 Contexto
 !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
 
 Person(usuarioFinal, "Usuário", "Pessoa física que controla receitas, despesas e\ncartões de crédito pelo navegador.")

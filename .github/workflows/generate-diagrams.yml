@@ -21,11 +21,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Instalar Java 17
+      - name: Instalar Java 17 e Graphviz
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+
+      - name: Instalar Graphviz
+        run: sudo apt-get install -y graphviz
 
       - name: Baixar plantuml.jar (release mais recente)
         env:
@@ -36,7 +39,6 @@ jobs:
             | python3 -c "import sys,json;d=json.load(sys.stdin);skip=['lgpl','asl','mit','bsd','pdf','javadoc','sources'];print(next(a['browser_download_url'] for a in d['assets'] if a['name'].endswith('.jar') and not any(s in a['name'] for s in skip)))")
           echo "URL: $PLANTUML_URL"
           curl -L -o plantuml.jar "$PLANTUML_URL"
-          java -jar plantuml.jar -version
 
       - name: Criar diretório de saída
         run: mkdir -p docs/diagramas/png
