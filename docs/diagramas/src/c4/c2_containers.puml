@@ -6,12 +6,9 @@ System_Ext(sentry, "Sentry", "Rastreamento de erros em produção.")
 System_Ext(betterStack, "Better Stack", "Monitoramento externo de uptime.")
 
 System_Boundary(ordoFinance, "Ordo Finance — Oracle Cloud Always Free VM") {
-  Container(web, "App Principal", "Django 5 / Gunicorn / WhiteNoise",
-    "Monolito SSR. Gerencia autenticação, transações, cartões de crédito\ne categorias. Expõe porta 8000.")
-  Container(api, "Microserviço de Relatórios", "FastAPI / Uvicorn / FPDF2",
-    "Geração de PDFs de relatório financeiro.\nExpõe porta 8001 externamente.")
-  ContainerDb(db, "Banco de Dados", "PostgreSQL 15",
-    "Armazena usuários, transações, categorias e cartões.\nVolume persistente.")
+  Container(web, "App Principal", "Django 5 / Gunicorn / WhiteNoise", "Monolito SSR. Gerencia autenticação, transações, cartões de crédito e categorias. Expõe porta 8000.")
+  Container(api, "Microserviço de Relatórios", "FastAPI / Uvicorn / FPDF2", "Geração de PDFs de relatório financeiro. Expõe porta 8001.")
+  ContainerDb(db, "Banco de Dados", "PostgreSQL 15", "Armazena usuários, transações, categorias e cartões. Volume persistente.")
 }
 
 Rel(usuarioFinal, web, "Navega e interage", "HTTPS / HTML+CSS+JS")

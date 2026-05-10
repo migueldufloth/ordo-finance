@@ -7,30 +7,18 @@ Container(api, "Microserviço FastAPI", "Geração de PDFs.")
 System_Ext(sentry, "Sentry", "Rastreamento de erros em produção.")
 
 Container_Boundary(web, "App Principal — Django 5 / Gunicorn") {
-  Component(urlRouter, "URL Router", "Django URLconf",
-    "ordo_project/urls.py + financas/urls.py\n17 rotas registradas.")
-  Component(authMiddleware, "Auth Middleware", "django.contrib.auth",
-    "Middleware de sessão. @login_required / LoginRequiredMixin.\nRedireciona para /accounts/login/ se não autenticado.")
-  Component(dashboardView, "Dashboard View", "FBV — views.py",
-    "GET /\nSaldo total, receitas/despesas do mês atual, últimos 5 lançamentos.")
-  Component(transacaoViews, "Transação Views", "FBV — views.py",
-    "GET /transacoes/ (paginado 10/pág)\nGET+POST /transacoes/adicionar/\nGET+POST /transacoes/<pk>/editar/\nGET+POST /transacoes/<pk>/remover/\nGET /transacoes/relatorio/")
-  Component(cartaoViews, "Cartão Views", "CBV — views.py",
-    "BaseCartaoCreditoView (mixin)\nList / Create / Update / Delete\n/transacoes/cartoes/*")
-  Component(categoriaViews, "Categoria Views", "CBV — views.py",
-    "BaseCategoriaView (mixin)\nList / Create / Update / Delete\n/transacoes/categorias/*")
-  Component(healthView, "Health View", "FBV — ordo_project/views.py",
-    "GET /health/\nVerifica banco. Retorna JSON HTTP 200 ou 503.")
-  Component(forms, "Formulários", "Django ModelForms — forms.py",
-    "TransacaoForm (querysets filtrados por usuário)\nCartaoCreditoForm\nCategoriaForm")
-  Component(models, "Modelos ORM", "Django ORM — models.py",
-    "Categoria / CartaoCredito / Transacao\nTodos com FK para User (isolamento por usuário).")
-  Component(templates, "Templates HTML", "Django Templates",
-    "TailwindCSS CDN v3 + Alpine.js v3 + Lucide Icons\nbase.html + 9 templates de feature.")
-  Component(reportClient, "Cliente de Relatório", "requests lib",
-    "POST para REPORTS_API_URL/relatorio/pdf\ntimeout=30s. Retorna PDF como attachment.")
-  Component(staticFiles, "Arquivos Estáticos", "WhiteNoise + Brotli",
-    "Serve CSS, JS e imagens comprimidos com Brotli.\nCompressedManifestStaticFilesStorage.")
+  Component(urlRouter, "URL Router", "Django URLconf", "ordo_project/urls.py + financas/urls.py. 17 rotas registradas.")
+  Component(authMiddleware, "Auth Middleware", "django.contrib.auth", "Middleware de sessão. @login_required / LoginRequiredMixin. Redireciona para /accounts/login/ se não autenticado.")
+  Component(dashboardView, "Dashboard View", "FBV — views.py", "GET /. Saldo total, receitas/despesas do mês atual, últimos 5 lançamentos.")
+  Component(transacaoViews, "Transação Views", "FBV — views.py", "GET /transacoes/ (paginado 10/pág). GET+POST /transacoes/adicionar/. GET+POST /transacoes/<pk>/editar/ e remover/.")
+  Component(cartaoViews, "Cartão Views", "CBV — views.py", "BaseCartaoCreditoView (mixin). List / Create / Update / Delete. /transacoes/cartoes/*")
+  Component(categoriaViews, "Categoria Views", "CBV — views.py", "BaseCategoriaView (mixin). List / Create / Update / Delete. /transacoes/categorias/*")
+  Component(healthView, "Health View", "FBV — ordo_project/views.py", "GET /health/. Verifica banco. Retorna JSON HTTP 200 ou 503.")
+  Component(forms, "Formulários", "Django ModelForms — forms.py", "TransacaoForm (querysets filtrados por usuário). CartaoCreditoForm. CategoriaForm.")
+  Component(models, "Modelos ORM", "Django ORM — models.py", "Categoria / CartaoCredito / Transacao. Todos com FK para User (isolamento por usuário).")
+  Component(templates, "Templates HTML", "Django Templates", "TailwindCSS CDN v3 + Alpine.js v3 + Lucide Icons. base.html + 9 templates de feature.")
+  Component(reportClient, "Cliente de Relatório", "requests lib", "POST para REPORTS_API_URL/relatorio/pdf. timeout=30s. Retorna PDF como attachment.")
+  Component(staticFiles, "Arquivos Estáticos", "WhiteNoise + Brotli", "Serve CSS, JS e imagens comprimidos com Brotli. CompressedManifestStaticFilesStorage.")
 }
 
 Rel(usuarioFinal, urlRouter, "Requisição HTTP", "HTTP/HTTPS")

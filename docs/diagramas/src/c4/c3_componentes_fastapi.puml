@@ -5,18 +5,12 @@ Container(web, "App Principal Django", "Requisita PDFs via HTTP POST.")
 System_Ext(fpdf2Lib, "FPDF2 Library", "Biblioteca Python de geração de PDF.")
 
 Container_Boundary(api, "Microserviço de Relatórios — FastAPI / Uvicorn") {
-  Component(fastApiApp, "FastAPI App", "FastAPI — main.py",
-    "Ponto de entrada. title='Ordo Finance API'.")
-  Component(healthEndpoint, "Health Endpoint", "FastAPI Route",
-    "GET /health — Retorna {status: ok, service: reports-api}.")
-  Component(rootEndpoint, "Root Endpoint", "FastAPI Route",
-    "GET / — Retorna status do serviço.")
-  Component(relatorioEndpoint, "Relatório PDF Endpoint", "FastAPI Route",
-    "POST /relatorio/pdf\nRecebe RelatorioRequest via body JSON.\nRetorna bytes do PDF (application/pdf).")
-  Component(pydanticSchemas, "Pydantic Schemas", "Pydantic BaseModel",
-    "TransacaoItem: data, descricao, tipo, valor, categoria.\nRelatorioRequest: usuario, transacoes[].")
-  Component(pdfGenerator, "PDF Generator", "FPDF2 — interno",
-    "Gera PDF com cabeçalho, tabela de transações\ne totais de receitas/despesas/saldo.")
+  Component(fastApiApp, "FastAPI App", "FastAPI — main.py", "Ponto de entrada. title='Ordo Finance API'.")
+  Component(healthEndpoint, "Health Endpoint", "FastAPI Route", "GET /health — Retorna {status: ok, service: reports-api}.")
+  Component(rootEndpoint, "Root Endpoint", "FastAPI Route", "GET / — Retorna status do serviço.")
+  Component(relatorioEndpoint, "Relatório PDF Endpoint", "FastAPI Route", "POST /relatorio/pdf. Recebe RelatorioRequest via body JSON. Retorna bytes do PDF (application/pdf).")
+  Component(pydanticSchemas, "Pydantic Schemas", "Pydantic BaseModel", "TransacaoItem: data, descricao, tipo, valor, categoria. RelatorioRequest: usuario, transacoes[].")
+  Component(pdfGenerator, "PDF Generator", "FPDF2 — interno", "Gera PDF com cabeçalho, tabela de transações e totais de receitas/despesas/saldo.")
 }
 
 Rel(web, fastApiApp, "POST /relatorio/pdf", "HTTP REST (JSON)")
