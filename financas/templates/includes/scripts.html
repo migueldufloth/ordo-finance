@@ -67,6 +67,16 @@
         });
     }
 
+    // ── Toggle de senha (login) ───────────────────────────────────────────────
+
+    function togglePassword() {
+        const field = document.getElementById('id_password');
+        const icon  = document.getElementById('eye-icon');
+        field.type = field.type === 'password' ? 'text' : 'password';
+        icon.setAttribute('data-lucide', field.type === 'password' ? 'eye' : 'eye-off');
+        lucide.createIcons();
+    }
+
     // ── Init ──────────────────────────────────────────────────────────────────
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -77,6 +87,15 @@
 
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
             if ((localStorage.getItem('theme') || 'system') === 'system') applyTheme('system');
+        });
+
+        // Formata inputs de moeda (valor / limite) em qualquer página
+        document.querySelectorAll('input[name="valor"], input[name="limite"]').forEach(function (input) {
+            input.addEventListener('input', function (e) {
+                let value = e.target.value.replace(/\D/g, '');
+                value = (value / 100).toFixed(2);
+                e.target.value = value;
+            });
         });
 
         // Renderiza mensagens Django como toasts

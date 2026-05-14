@@ -82,18 +82,4 @@
     </form>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    lucide.createIcons();
-    const limiteInput = document.querySelector('input[name="limite"]');
-    if (limiteInput) {
-        limiteInput.addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, '');
-            value = (value / 100).toFixed(2);
-            e.target.value = value;
-        });
-    }
-});
-</script>
-
 {% endblock %}
