@@ -133,7 +133,7 @@ class IsolamentoDadosTest(TestCase):
         self.client.login(username='user2', password='senha123')
         response = self.client.get(reverse('lista_transacoes'))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.context['transacoes']), 0)
+        self.assertEqual(len(response.context['page_obj']), 0)
 
     def test_criar_transacao_associa_ao_usuario_logado(self):
         categoria = criar_categoria(self.user2, nome='Salário')
