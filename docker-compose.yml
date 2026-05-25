@@ -21,11 +21,9 @@ services:
       - "8000:8000"
     depends_on:
       - db
-      - api
     environment:
       - DATABASE_URL=postgres://postgres:postgres@db:5432/ordo
       - DEBUG=True
-      - REPORTS_API_URL=http://api:8000
 
   api:
     build:

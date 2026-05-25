@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{% if form.instance.pk %}Editar{% else %}Novo{% endif %} Orçamento - Ordo Finance{% endblock %}
+{% block content %}
+
+<div class="max-w-lg mx-auto animate-fade-in">
+    <div class="mb-6">
+        <h1 class="text-xl font-bold text-dark-800">
+            {% if form.instance.pk %}Editar Orçamento{% else %}Novo Orçamento{% endif %}
+        </h1>
+        <p class="text-dark-500 text-sm">Defina um limite mensal para uma categoria</p>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-6">
+        <form method="post" class="space-y-5">
+            {% csrf_token %}
+
+            <div>
+                <label class="block text-sm font-medium text-dark-700 mb-1">Categoria</label>
+                {{ form.categoria }}
+                {% if form.categoria.errors %}
+                <p class="mt-1 text-xs text-red-600">{{ form.categoria.errors|join:", " }}</p>
+                {% endif %}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-dark-700 mb-1">Limite Mensal (R$)</label>
+                {{ form.valor_mensal }}
+                {% if form.valor_mensal.errors %}
+                <p class="mt-1 text-xs text-red-600">{{ form.valor_mensal.errors|join:", " }}</p>
+                {% endif %}
+            </div>
+
+            <div class="flex space-x-3 pt-2">
+                <button type="submit"
+                    class="flex-1 py-2.5 text-sm font-semibold text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors duration-150">
+                    {% if form.instance.pk %}Salvar alterações{% else %}Criar orçamento{% endif %}
+                </button>
+                <a href="{% url 'orcamento_list' %}"
+                    class="flex-1 py-2.5 text-sm font-semibold text-center text-neutral-600 bg-neutral-100 hover:bg-neutral-200 rounded-lg transition-colors duration-150">
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

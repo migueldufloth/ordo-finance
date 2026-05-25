@@ -2,10 +2,10 @@
 {% block title %}Categorias - Ordo Finance{% endblock %}
 {% block content %}
 
-<div x-data="{ show: false, url: '', name: '' }">
+<div x-data="{ show: false, url: '', name: '' }" class="h-full flex flex-col">
 
 <!-- Header -->
-<div class="flex justify-between items-center mb-4 animate-fade-in">
+<div class="flex-none flex justify-between items-center mb-4 animate-fade-in">
     <div>
         <h1 class="text-xl font-bold text-dark-800">Categorias</h1>
         <p class="text-dark-500 text-sm">Gerencie suas categorias de transações</p>
@@ -18,50 +18,56 @@
 </div>
 
 {% if object_list %}
-<div class="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden animate-slide-up">
-    <table class="min-w-full divide-y divide-neutral-200">
-        <thead class="bg-gray-50">
-            <tr class="text-neutral-500">
-                <th class="px-5 py-3 text-xs font-medium text-left uppercase">
-                    <div class="flex items-center space-x-1">
-                        <i data-lucide="folder" class="w-3.5 h-3.5"></i>
-                        <span>Nome</span>
-                    </div>
-                </th>
-                <th class="px-5 py-3 text-xs font-medium text-center uppercase w-28">Ações</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-neutral-200">
-            {% for categoria in object_list %}
-            <tr class="hover:bg-gray-50 transition-colors">
-                <td class="px-5 py-3">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                            <i data-lucide="tag" class="w-4 h-4 text-gray-400"></i>
+<div class="flex-1 min-h-0 flex flex-col bg-white rounded-2xl shadow-md border border-gray-100 animate-slide-up overflow-hidden">
+    <div class="flex-1 min-h-0 overflow-y-auto">
+        <table class="min-w-full divide-y divide-neutral-200">
+            <thead class="bg-gray-50 sticky top-0 z-10">
+                <tr class="text-neutral-500">
+                    <th class="px-5 py-3 text-xs font-medium text-left uppercase">
+                        <div class="flex items-center space-x-1">
+                            <i data-lucide="folder" class="w-3.5 h-3.5"></i>
+                            <span>Nome</span>
                         </div>
-                        <span class="font-medium text-dark-800 text-sm">{{ categoria.nome }}</span>
-                    </div>
-                </td>
-                <td class="px-5 py-3 text-center">
-                    <div class="flex items-center justify-center space-x-1">
-                        <a href="{% url 'categoria_update' categoria.pk %}"
-                           class="p-1.5 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded-md transition-colors duration-150" title="Editar">
-                            <i data-lucide="pencil" class="w-4 h-4"></i>
-                        </a>
-                        <button @click="url = '{% url 'categoria_delete' categoria.pk %}'; name = '{{ categoria.nome|escapejs }}'; show = true"
-                           class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors duration-150" title="Remover">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                    </th>
+                    <th class="px-5 py-3 text-xs font-medium text-center uppercase w-28">Ações</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-neutral-200">
+                {% for categoria in object_list %}
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-5 py-3">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                                <i data-lucide="tag" class="w-4 h-4 text-gray-400"></i>
+                            </div>
+                            <span class="font-medium text-dark-800 text-sm">{{ categoria.nome }}</span>
+                        </div>
+                    </td>
+                    <td class="px-5 py-3 text-center">
+                        <div class="flex items-center justify-center space-x-1">
+                            <a href="{% url 'categoria_update' categoria.pk %}"
+                               class="p-1.5 text-neutral-400 hover:text-neutral-800 hover:bg-neutral-100 rounded-md transition-colors duration-150" title="Editar">
+                                <i data-lucide="pencil" class="w-4 h-4"></i>
+                            </a>
+                            <button @click="url = '{% url 'categoria_delete' categoria.pk %}'; name = '{{ categoria.nome|escapejs }}'; show = true"
+                               class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors duration-150" title="Remover">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% include "includes/pagination.html" %}
 </div>
+
 {% else %}
-{% url 'categoria_create' as btn_url %}
-{% include "includes/empty_state.html" with icon="folder" title="Nenhuma categoria cadastrada" subtitle="Crie categorias para organizar suas transações." btn_url=btn_url btn_text="Adicionar Categoria" %}
+<div class="flex-1 flex items-center justify-center">
+    {% url 'categoria_create' as btn_url %}
+    {% include "includes/empty_state.html" with icon="folder" title="Nenhuma categoria cadastrada" subtitle="Crie categorias para organizar suas transações." btn_url=btn_url btn_text="Adicionar Categoria" %}
+</div>
 {% endif %}
 
 {% include "includes/modal_delete.html" %}

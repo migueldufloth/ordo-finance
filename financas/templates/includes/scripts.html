@@ -28,6 +28,44 @@
         }));
     }
 
+    // ── Select customizado (Pines) ────────────────────────────────────────────
+
+    function alpineSelect(fieldId, placeholder) {
+        return {
+            open: false,
+            selected: '',
+            selectedLabel: placeholder || 'Selecione...',
+            options: [],
+            _placeholder: placeholder || 'Selecione...',
+            init() {
+                const sel = document.getElementById(fieldId);
+                if (!sel) return;
+                this.options = Array.from(sel.options)
+                    .filter(o => o.value !== '')
+                    .map(o => ({ value: o.value, label: o.text.trim() }));
+                if (sel.value) {
+                    this.selected = sel.value;
+                    this.selectedLabel = sel.options[sel.selectedIndex].text.trim();
+                }
+            },
+            pick(opt) {
+                this.selected = opt.value;
+                this.selectedLabel = opt.label;
+                const sel = document.getElementById(fieldId);
+                if (sel) sel.value = opt.value;
+                this.open = false;
+                setTimeout(() => lucide.createIcons(), 0);
+            },
+            clear() {
+                this.selected = '';
+                this.selectedLabel = this._placeholder;
+                const sel = document.getElementById(fieldId);
+                if (sel) sel.value = '';
+                this.open = false;
+            }
+        };
+    }
+
     // ── Toggle de senha (login) ───────────────────────────────────────────────
 
     function togglePassword() {

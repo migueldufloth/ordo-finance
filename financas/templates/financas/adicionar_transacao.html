@@ -14,24 +14,210 @@
 
             <!-- Linha 1: campos compactos em 4 colunas -->
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="form-group">
-                    <label for="{{ form.tipo.id_for_label }}" class="flex items-center space-x-2 text-dark-700 font-medium mb-1.5 text-sm">
+
+                <!-- Tipo -->
+                <div>
+                    <label class="flex items-center space-x-2 text-dark-700 font-medium mb-1.5 text-sm">
                         <i data-lucide="tag" class="w-4 h-4"></i>
                         <span>Tipo</span>
                     </label>
-                    {{ form.tipo }}
+                    <div x-data="{
+                            open: false,
+                            selected: '{{ form.tipo.value|default:'' }}',
+                            get label() {
+                                return { RECEITA: 'Receita', DESPESA: 'Despesa' }[this.selected] || 'Selecione...';
+                            },
+                            pick(v) {
+                                this.selected = v;
+                                document.getElementById('{{ form.tipo.id_for_label }}').value = v;
+                                this.open = false;
+                                setTimeout(() => lucide.createIcons(), 0);
+                            }
+                         }"
+                         @keydown.escape="open = false"
+                         @click.outside="open = false"
+                         class="relative">
+                        <div class="hidden">{{ form.tipo }}</div>
+                        <button type="button" @click="open = !open"
+                            class="w-full h-10 px-3 text-sm text-left bg-white border border-gray-300 rounded-md inline-flex items-center justify-between gap-2 hover:border-gray-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/10 transition-all duration-150">
+                            <span class="inline-flex items-center gap-2 min-w-0">
+                                <span class="w-2 h-2 rounded-full flex-shrink-0 transition-colors duration-150"
+                                      :class="selected === 'RECEITA' ? 'bg-green-500' : selected === 'DESPESA' ? 'bg-red-500' : 'bg-gray-300'"></span>
+                                <span x-text="label" :class="selected ? 'text-gray-900' : 'text-gray-400'" class="truncate"></span>
+                            </span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 flex-shrink-0 transition-transform duration-200" :class="open && 'rotate-180'"></i>
+                        </button>
+                        <div x-show="open" x-cloak
+                             x-transition:enter="ease-out duration-200"
+                             x-transition:enter-start="opacity-0 -translate-y-1 scale-[0.98]"
+                             x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                             x-transition:leave="ease-in duration-150"
+                             x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                             x-transition:leave-end="opacity-0 -translate-y-1 scale-[0.98]"
+                             class="absolute z-30 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                            <button type="button" @click="pick('RECEITA')"
+                                class="w-full px-3 py-2.5 text-sm text-left inline-flex items-center gap-2.5 transition-colors duration-100"
+                                :class="selected === 'RECEITA' ? 'bg-green-50' : 'hover:bg-gray-50'">
+                                <span class="w-2 h-2 rounded-full bg-green-500 flex-shrink-0"></span>
+                                <span class="flex-1" :class="selected === 'RECEITA' ? 'font-medium text-green-700' : 'text-gray-700'">Receita</span>
+                                <i x-show="selected === 'RECEITA'" data-lucide="check" class="w-3.5 h-3.5 text-green-500 flex-shrink-0"></i>
+                            </button>
+                            <button type="button" @click="pick('DESPESA')"
+                                class="w-full px-3 py-2.5 text-sm text-left inline-flex items-center gap-2.5 transition-colors duration-100"
+                                :class="selected === 'DESPESA' ? 'bg-red-50' : 'hover:bg-gray-50'">
+                                <span class="w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></span>
+                                <span class="flex-1" :class="selected === 'DESPESA' ? 'font-medium text-red-700' : 'text-gray-700'">Despesa</span>
+                                <i x-show="selected === 'DESPESA'" data-lucide="check" class="w-3.5 h-3.5 text-red-500 flex-shrink-0"></i>
+                            </button>
+                        </div>
+                    </div>
                     {% if form.tipo.errors %}<p class="text-red-600 text-xs mt-1">{{ form.tipo.errors.as_text }}</p>{% endif %}
                 </div>
 
-                <div class="form-group">
-                    <label for="{{ form.data.id_for_label }}" class="flex items-center space-x-2 text-dark-700 font-medium mb-1.5 text-sm">
+                <!-- Data (Pines datepicker) -->
+                <div>
+                    <label class="flex items-center space-x-2 text-dark-700 font-medium mb-1.5 text-sm">
                         <i data-lucide="calendar" class="w-4 h-4"></i>
                         <span>Data</span>
                     </label>
-                    {{ form.data }}
+                    <div x-data="{
+                            open: false,
+                            selectedDate: null,
+                            viewYear: new Date().getFullYear(),
+                            viewMonth: new Date().getMonth(),
+                            weekdays: ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'],
+                            months: ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'],
+                            init() {
+                                const inp = document.getElementById('{{ form.data.id_for_label }}');
+                                if (inp && inp.value) {
+                                    const [y, m, d] = inp.value.split('-').map(Number);
+                                    this.selectedDate = { y, m: m - 1, d };
+                                    this.viewYear = y; this.viewMonth = m - 1;
+                                } else {
+                                    const t = new Date();
+                                    this.selectedDate = { y: t.getFullYear(), m: t.getMonth(), d: t.getDate() };
+                                    this.viewYear = t.getFullYear(); this.viewMonth = t.getMonth();
+                                    this._writeInput(this.selectedDate);
+                                }
+                            },
+                            get label() {
+                                if (!this.selectedDate) return 'Selecione...';
+                                const { y, m, d } = this.selectedDate;
+                                return String(d).padStart(2,'0') + '/' + String(m+1).padStart(2,'0') + '/' + y;
+                            },
+                            get calendarDays() {
+                                const first = new Date(this.viewYear, this.viewMonth, 1).getDay();
+                                const total = new Date(this.viewYear, this.viewMonth + 1, 0).getDate();
+                                const days = [];
+                                for (let i = 0; i < first; i++) days.push(null);
+                                for (let d = 1; d <= total; d++) days.push(d);
+                                return days;
+                            },
+                            prevMonth() {
+                                if (this.viewMonth === 0) { this.viewMonth = 11; this.viewYear--; }
+                                else this.viewMonth--;
+                            },
+                            nextMonth() {
+                                if (this.viewMonth === 11) { this.viewMonth = 0; this.viewYear++; }
+                                else this.viewMonth++;
+                            },
+                            selectDay(d) {
+                                if (!d) return;
+                                this.selectedDate = { y: this.viewYear, m: this.viewMonth, d };
+                                this._writeInput(this.selectedDate);
+                                this.open = false;
+                            },
+                            goToday() {
+                                const t = new Date();
+                                this.viewYear = t.getFullYear(); this.viewMonth = t.getMonth();
+                                this.selectDay(t.getDate());
+                            },
+                            isSelected(d) {
+                                return d && this.selectedDate &&
+                                    this.selectedDate.y === this.viewYear &&
+                                    this.selectedDate.m === this.viewMonth &&
+                                    this.selectedDate.d === d;
+                            },
+                            isToday(d) {
+                                if (!d) return false;
+                                const t = new Date();
+                                return t.getFullYear() === this.viewYear && t.getMonth() === this.viewMonth && t.getDate() === d;
+                            },
+                            _writeInput(sd) {
+                                const inp = document.getElementById('{{ form.data.id_for_label }}');
+                                if (inp) inp.value = sd.y + '-' + String(sd.m+1).padStart(2,'0') + '-' + String(sd.d).padStart(2,'0');
+                            }
+                         }"
+                         @keydown.escape="open = false"
+                         @click.outside="open = false"
+                         class="relative">
+                        <div class="hidden">{{ form.data }}</div>
+                        <!-- Trigger -->
+                        <button type="button" @click="open = !open"
+                            class="w-full h-10 px-3 text-sm text-left bg-white border border-gray-300 rounded-md inline-flex items-center justify-between gap-2 hover:border-gray-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/10 transition-all duration-150">
+                            <span class="inline-flex items-center gap-2">
+                                <i data-lucide="calendar" class="w-4 h-4 text-gray-400 flex-shrink-0"></i>
+                                <span x-text="label" class="text-gray-900"></span>
+                            </span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 flex-shrink-0 transition-transform duration-200" :class="open && 'rotate-180'"></i>
+                        </button>
+                        <!-- Calendar panel -->
+                        <div x-show="open" x-cloak
+                             x-transition:enter="ease-out duration-200"
+                             x-transition:enter-start="opacity-0 -translate-y-1 scale-[0.98]"
+                             x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                             x-transition:leave="ease-in duration-150"
+                             x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                             x-transition:leave-end="opacity-0 -translate-y-1 scale-[0.98]"
+                             class="absolute z-30 mt-1 left-0 bg-white border border-gray-200 rounded-xl shadow-lg p-3 w-72">
+                            <!-- Header -->
+                            <div class="flex items-center justify-between mb-2">
+                                <button type="button" @click="prevMonth()"
+                                    class="p-1.5 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors">
+                                    <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                                </button>
+                                <span class="text-sm font-semibold text-gray-900" x-text="months[viewMonth] + ' ' + viewYear"></span>
+                                <button type="button" @click="nextMonth()"
+                                    class="p-1.5 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors">
+                                    <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            <!-- Weekday labels -->
+                            <div class="grid grid-cols-7 mb-1">
+                                <template x-for="wd in weekdays" :key="wd">
+                                    <div x-text="wd" class="text-center text-xs font-medium text-gray-400 py-1"></div>
+                                </template>
+                            </div>
+                            <!-- Day grid -->
+                            <div class="grid grid-cols-7 gap-y-0.5">
+                                <template x-for="(day, idx) in calendarDays" :key="idx">
+                                    <div class="flex justify-center">
+                                        <button type="button" @click="selectDay(day)"
+                                            class="w-8 h-8 rounded-full flex items-center justify-center text-sm transition-colors duration-100"
+                                            :class="[
+                                                !day ? 'invisible pointer-events-none' : '',
+                                                isSelected(day) ? 'bg-primary-500 text-white font-semibold' :
+                                                isToday(day)    ? 'border border-primary-500 text-primary-600 font-medium' :
+                                                day             ? 'text-gray-700 hover:bg-gray-100' : ''
+                                            ]"
+                                            x-text="day || ''">
+                                        </button>
+                                    </div>
+                                </template>
+                            </div>
+                            <!-- Footer -->
+                            <div class="mt-2 pt-2 border-t border-gray-100">
+                                <button type="button" @click="goToday()"
+                                    class="w-full text-center text-xs font-medium text-primary-600 hover:text-primary-700 py-1 rounded-lg hover:bg-primary-50 transition-colors">
+                                    Hoje
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                     {% if form.data.errors %}<p class="text-red-600 text-xs mt-1">{{ form.data.errors.as_text }}</p>{% endif %}
                 </div>
 
+                <!-- Valor -->
                 <div class="form-group">
                     <label for="{{ form.valor.id_for_label }}" class="flex items-center space-x-2 text-dark-700 font-medium mb-1.5 text-sm">
                         <i data-lucide="dollar-sign" class="w-4 h-4"></i>
@@ -44,12 +230,44 @@
                     {% if form.valor.errors %}<p class="text-red-600 text-xs mt-1">{{ form.valor.errors.as_text }}</p>{% endif %}
                 </div>
 
-                <div class="form-group">
-                    <label for="{{ form.categoria.id_for_label }}" class="flex items-center space-x-2 text-dark-700 font-medium mb-1.5 text-sm">
+                <!-- Categoria -->
+                <div>
+                    <label class="flex items-center space-x-2 text-dark-700 font-medium mb-1.5 text-sm">
                         <i data-lucide="folder" class="w-4 h-4"></i>
                         <span>Categoria</span>
                     </label>
-                    {{ form.categoria }}
+                    <div x-data="alpineSelect('{{ form.categoria.id_for_label }}', 'Selecione...')"
+                         @keydown.escape="open = false"
+                         @click.outside="open = false"
+                         class="relative">
+                        <div class="hidden">{{ form.categoria }}</div>
+                        <button type="button" @click="open = !open"
+                            class="w-full h-10 px-3 text-sm text-left bg-white border border-gray-300 rounded-md inline-flex items-center justify-between gap-2 hover:border-gray-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/10 transition-all duration-150">
+                            <span x-text="selectedLabel" :class="selected ? 'text-gray-900' : 'text-gray-400'" class="truncate flex-1"></span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 flex-shrink-0 transition-transform duration-200" :class="open && 'rotate-180'"></i>
+                        </button>
+                        <div x-show="open" x-cloak
+                             x-transition:enter="ease-out duration-200"
+                             x-transition:enter-start="opacity-0 -translate-y-1 scale-[0.98]"
+                             x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                             x-transition:leave="ease-in duration-150"
+                             x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                             x-transition:leave-end="opacity-0 -translate-y-1 scale-[0.98]"
+                             class="absolute z-30 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                            <div class="max-h-52 overflow-y-auto py-1">
+                                <template x-for="opt in options" :key="opt.value">
+                                    <button type="button" @click="pick(opt)"
+                                        class="w-full px-3 py-2 text-sm text-left inline-flex items-center gap-2 transition-colors duration-100"
+                                        :class="selected === opt.value ? 'bg-primary-50' : 'hover:bg-gray-50'">
+                                        <span x-text="opt.label" class="flex-1 truncate"
+                                              :class="selected === opt.value ? 'font-medium text-primary-700' : 'text-gray-700'"></span>
+                                        <i x-show="selected === opt.value" data-lucide="check" class="w-3.5 h-3.5 text-primary-500 flex-shrink-0"></i>
+                                    </button>
+                                </template>
+                                <p x-show="options.length === 0" class="px-3 py-2 text-sm text-gray-400 text-center">Nenhuma categoria cadastrada</p>
+                            </div>
+                        </div>
+                    </div>
                     {% if form.categoria.errors %}<p class="text-red-600 text-xs mt-1">{{ form.categoria.errors.as_text }}</p>{% endif %}
                 </div>
             </div>
@@ -65,13 +283,54 @@
                     {% if form.descricao.errors %}<p class="text-red-600 text-xs mt-1">{{ form.descricao.errors.as_text }}</p>{% endif %}
                 </div>
 
-                <div class="form-group">
-                    <label for="{{ form.cartao_credito.id_for_label }}" class="flex items-center space-x-2 text-dark-700 font-medium mb-1.5 text-sm">
+                <!-- Cartão (opcional) -->
+                <div>
+                    <label class="flex items-center space-x-2 text-dark-700 font-medium mb-1.5 text-sm">
                         <i data-lucide="credit-card" class="w-4 h-4"></i>
                         <span>Cartão</span>
                         <span class="bg-gray-100 text-gray-400 text-xs font-semibold px-2 py-0.5 rounded-full">Opcional</span>
                     </label>
-                    {{ form.cartao_credito }}
+                    <div x-data="alpineSelect('{{ form.cartao_credito.id_for_label }}', 'Nenhum')"
+                         @keydown.escape="open = false"
+                         @click.outside="open = false"
+                         class="relative">
+                        <div class="hidden">{{ form.cartao_credito }}</div>
+                        <button type="button" @click="open = !open"
+                            class="w-full h-10 px-3 text-sm text-left bg-white border border-gray-300 rounded-md inline-flex items-center justify-between gap-2 hover:border-gray-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/10 transition-all duration-150">
+                            <span x-text="selectedLabel" :class="selected ? 'text-gray-900' : 'text-gray-400'" class="truncate flex-1"></span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 flex-shrink-0 transition-transform duration-200" :class="open && 'rotate-180'"></i>
+                        </button>
+                        <div x-show="open" x-cloak
+                             x-transition:enter="ease-out duration-200"
+                             x-transition:enter-start="opacity-0 -translate-y-1 scale-[0.98]"
+                             x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                             x-transition:leave="ease-in duration-150"
+                             x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                             x-transition:leave-end="opacity-0 -translate-y-1 scale-[0.98]"
+                             class="absolute z-30 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                            <div class="max-h-52 overflow-y-auto py-1">
+                                <!-- Opção "nenhum" -->
+                                <button type="button" @click="clear()"
+                                    class="w-full px-3 py-2 text-sm text-left inline-flex items-center gap-2 transition-colors duration-100 border-b border-gray-100"
+                                    :class="!selected ? 'bg-gray-50' : 'hover:bg-gray-50'">
+                                    <i data-lucide="minus-circle" class="w-3.5 h-3.5 flex-shrink-0 text-gray-400"></i>
+                                    <span class="flex-1 text-gray-400 italic">Nenhum cartão</span>
+                                    <i x-show="!selected" data-lucide="check" class="w-3.5 h-3.5 text-gray-400 flex-shrink-0"></i>
+                                </button>
+                                <template x-for="opt in options" :key="opt.value">
+                                    <button type="button" @click="pick(opt)"
+                                        class="w-full px-3 py-2 text-sm text-left inline-flex items-center gap-2 transition-colors duration-100"
+                                        :class="selected === opt.value ? 'bg-primary-50' : 'hover:bg-gray-50'">
+                                        <i data-lucide="credit-card" class="w-3.5 h-3.5 flex-shrink-0 text-gray-400"></i>
+                                        <span x-text="opt.label" class="flex-1 truncate"
+                                              :class="selected === opt.value ? 'font-medium text-primary-700' : 'text-gray-700'"></span>
+                                        <i x-show="selected === opt.value" data-lucide="check" class="w-3.5 h-3.5 text-primary-500 flex-shrink-0"></i>
+                                    </button>
+                                </template>
+                                <p x-show="options.length === 0" class="px-3 py-2 text-sm text-gray-400 text-center">Nenhum cartão cadastrado</p>
+                            </div>
+                        </div>
+                    </div>
                     {% if form.cartao_credito.errors %}<p class="text-red-600 text-xs mt-1">{{ form.cartao_credito.errors.as_text }}</p>{% endif %}
                 </div>
             </div>

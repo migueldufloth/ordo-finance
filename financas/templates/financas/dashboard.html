@@ -2,22 +2,38 @@
 {% block title %}Dashboard - Ordo Finance{% endblock %}
 {% block content %}
 
-<!-- Header -->
-<div class="flex justify-between items-center mb-4 animate-fade-in">
+<!-- Header + Seletor de mês -->
+<div class="flex flex-wrap justify-between items-center gap-3 mb-4 animate-fade-in">
     <div>
         <h1 class="text-xl font-bold text-dark-800">Olá, {{ user.username }}</h1>
-        <p class="text-dark-500 text-sm">Resumo financeiro do mês</p>
+        <p class="text-dark-500 text-sm">Resumo financeiro</p>
     </div>
-    <a href="{% url 'adicionar_transacao' %}"
-        class="group inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium tracking-wide text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors duration-150 shadow-sm">
-        <i data-lucide="plus" class="w-4 h-4 group-hover:rotate-90 transition-transform duration-150"></i>
-        <span>Novo Lançamento</span>
-    </a>
+    <div class="flex items-center gap-2 flex-wrap">
+        <!-- Seletor de período -->
+        <form method="get" x-data class="flex items-center gap-2">
+            <select name="mes" x-on:change="$el.closest('form').submit()"
+                class="px-2 py-1.5 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 bg-white">
+                {% for num, nome in meses_lista %}
+                <option value="{{ num }}" {% if num == mes %}selected{% endif %}>{{ nome }}</option>
+                {% endfor %}
+            </select>
+            <select name="ano" x-on:change="$el.closest('form').submit()"
+                class="px-2 py-1.5 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 bg-white">
+                {% for a in anos_lista %}
+                <option value="{{ a }}" {% if a == ano %}selected{% endif %}>{{ a }}</option>
+                {% endfor %}
+            </select>
+        </form>
+        <a href="{% url 'adicionar_transacao' %}"
+            class="group inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors duration-150 shadow-sm">
+            <i data-lucide="plus" class="w-4 h-4 group-hover:rotate-90 transition-transform duration-150"></i>
+            <span>Novo Lançamento</span>
+        </a>
+    </div>
 </div>
 
-<!-- Cards -->
+<!-- Cards de métricas -->
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-
     <div class="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden animate-slide-up">
         <div class="h-1 bg-emerald-500"></div>
         <div class="p-4">
@@ -25,13 +41,12 @@
                 <div class="w-9 h-9 bg-green-100 rounded-xl flex items-center justify-center">
                     <i data-lucide="trending-up" class="w-5 h-5 text-green-600"></i>
                 </div>
-                <span class="text-xs font-medium text-dark-400">Este mês</span>
+                <span class="text-xs font-medium text-dark-400">Este período</span>
             </div>
             <p class="text-xs text-dark-500 mb-0.5">Receitas</p>
             <p class="text-2xl font-bold text-dark-800">R$ {{ receitas_mes|floatformat:2 }}</p>
         </div>
     </div>
-
     <div class="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden animate-slide-up">
         <div class="h-1 bg-red-500"></div>
         <div class="p-4">
@@ -39,13 +54,12 @@
                 <div class="w-9 h-9 bg-red-100 rounded-xl flex items-center justify-center">
                     <i data-lucide="trending-down" class="w-5 h-5 text-red-600"></i>
                 </div>
-                <span class="text-xs font-medium text-dark-400">Este mês</span>
+                <span class="text-xs font-medium text-dark-400">Este período</span>
             </div>
             <p class="text-xs text-dark-500 mb-0.5">Despesas</p>
             <p class="text-2xl font-bold text-dark-800">R$ {{ despesas_mes|floatformat:2 }}</p>
         </div>
     </div>
-
     <div class="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden animate-slide-up">
         <div class="h-1 {% if saldo_total >= 0 %}bg-slate-400{% else %}bg-amber-500{% endif %}"></div>
         <div class="p-4">
@@ -53,13 +67,111 @@
                 <div class="w-9 h-9 bg-gray-100 rounded-xl flex items-center justify-center">
                     <i data-lucide="wallet" class="w-5 h-5 text-dark-500"></i>
                 </div>
-                <span class="text-xs font-medium text-dark-400">Saldo atual</span>
+                <span class="text-xs font-medium text-dark-400">Saldo total</span>
             </div>
-            <p class="text-xs text-dark-500 mb-0.5">Saldo Total</p>
+            <p class="text-xs text-dark-500 mb-0.5">Saldo Acumulado</p>
             <p class="text-2xl font-bold {% if saldo_total >= 0 %}text-dark-800{% else %}text-red-600{% endif %}">R$ {{ saldo_total|floatformat:2 }}</p>
         </div>
     </div>
 </div>
+
+<!-- Gráficos -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+    <!-- Gastos por categoria (donut) -->
+    <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-5 animate-fade-in">
+        <h2 class="font-bold text-dark-800 text-sm mb-4">Gastos por Categoria</h2>
+        {% if chart_categorias != '{"labels": [], "data": []}' %}
+        <div class="flex items-center justify-center" style="height:220px">
+            <canvas id="chartCategorias"></canvas>
+        </div>
+        {% else %}
+        <div class="flex items-center justify-center h-48 text-dark-400 text-sm">Sem despesas neste período.</div>
+        {% endif %}
+    </div>
+
+    <!-- Receita vs Despesa (bar) -->
+    <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-5 animate-fade-in">
+        <h2 class="font-bold text-dark-800 text-sm mb-4">Receitas vs Despesas — Últimos 6 Meses</h2>
+        <div style="height:220px">
+            <canvas id="chartEvolucao"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Saldo acumulado (line) — linha inteira -->
+<div class="bg-white rounded-2xl shadow-md border border-gray-100 p-5 mb-4 animate-fade-in">
+    <h2 class="font-bold text-dark-800 text-sm mb-4">Saldo Acumulado — Últimos 6 Meses</h2>
+    <div style="height:180px">
+        <canvas id="chartSaldo"></canvas>
+    </div>
+</div>
+
+<!-- Orçamentos -->
+{% if orcamentos %}
+<div class="bg-white rounded-2xl shadow-md border border-gray-100 mb-4 animate-fade-in">
+    <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                <i data-lucide="target" class="w-4 h-4 text-gray-500"></i>
+            </div>
+            <h2 class="font-bold text-dark-800">Orçamentos do Mês</h2>
+        </div>
+        <a href="{% url 'orcamento_list' %}" class="text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center space-x-1 transition-colors">
+            <span>Gerenciar</span><i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </a>
+    </div>
+    <div class="px-5 py-3 space-y-3">
+        {% for o in orcamentos %}
+        <div>
+            <div class="flex justify-between items-center mb-1">
+                <span class="text-sm font-medium text-dark-700">{{ o.categoria.nome }}</span>
+                <span class="text-xs font-semibold
+                    {% if o.percentual >= 90 %}text-red-600{% elif o.percentual >= 70 %}text-amber-600{% else %}text-neutral-500{% endif %}">
+                    R$ {{ o.gasto_mes|floatformat:2 }} / R$ {{ o.valor_mensal|floatformat:2 }}
+                </span>
+            </div>
+            <div class="w-full bg-gray-100 rounded-full h-2">
+                <div class="h-2 rounded-full transition-all duration-300
+                    {% if o.percentual >= 90 %}bg-red-500{% elif o.percentual >= 70 %}bg-amber-400{% else %}bg-green-500{% endif %}"
+                    style="width: {{ o.percentual }}%"></div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Cartões com uso do limite -->
+{% if cartoes %}
+<div class="bg-white rounded-2xl shadow-md border border-gray-100 mb-4 animate-fade-in">
+    <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                <i data-lucide="credit-card" class="w-4 h-4 text-gray-500"></i>
+            </div>
+            <h2 class="font-bold text-dark-800">Uso do Limite</h2>
+        </div>
+        <a href="{% url 'cartao_credito_list' %}" class="text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center space-x-1 transition-colors">
+            <span>Ver cartões</span><i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </a>
+    </div>
+    <div class="px-5 py-3 space-y-3">
+        {% for c in cartoes %}
+        <div class="flex items-center gap-3">
+            <a href="{% url 'fatura_cartao' c.pk %}" class="text-sm font-medium text-dark-700 hover:text-primary-600 transition-colors w-32 truncate">{{ c.nome }}</a>
+            <div class="flex-1 bg-gray-100 rounded-full h-2">
+                <div class="h-2 rounded-full transition-all duration-300
+                    {% if c.percentual_limite >= 90 %}bg-red-500{% elif c.percentual_limite >= 70 %}bg-amber-400{% else %}bg-green-500{% endif %}"
+                    style="width: {{ c.percentual_limite }}%"></div>
+            </div>
+            <span class="text-xs font-semibold text-neutral-500 w-24 text-right">
+                R$ {{ c.gasto_mes|floatformat:2 }} / {{ c.limite|floatformat:0 }}
+            </span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
 
 <!-- Lançamentos Recentes -->
 <div class="bg-white rounded-2xl shadow-md border border-gray-100 animate-fade-in">
@@ -70,13 +182,10 @@
             </div>
             <h2 class="font-bold text-dark-800">Lançamentos Recentes</h2>
         </div>
-        <a href="{% url 'lista_transacoes' %}"
-           class="text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center space-x-1 transition-colors">
-            <span>Ver todos</span>
-            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        <a href="{% url 'lista_transacoes' %}" class="text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center space-x-1 transition-colors">
+            <span>Ver todos</span><i data-lucide="arrow-right" class="w-4 h-4"></i>
         </a>
     </div>
-
     <div class="px-5 py-2">
         {% if ultimos_lancamentos %}
         <div class="divide-y divide-gray-100">
@@ -85,19 +194,16 @@
                 <div class="flex items-center space-x-3">
                     <div class="w-9 h-9 {% if lancamento.tipo == 'RECEITA' %}bg-green-100{% else %}bg-red-100{% endif %} rounded-xl flex items-center justify-center">
                         {% if lancamento.tipo == 'RECEITA' %}
-                            <i data-lucide="arrow-down-left" class="w-4 h-4 text-green-600"></i>
+                        <i data-lucide="arrow-down-left" class="w-4 h-4 text-green-600"></i>
                         {% else %}
-                            <i data-lucide="arrow-up-right" class="w-4 h-4 text-red-600"></i>
+                        <i data-lucide="arrow-up-right" class="w-4 h-4 text-red-600"></i>
                         {% endif %}
                     </div>
                     <div>
                         <p class="font-semibold text-dark-800 text-sm">{{ lancamento.descricao }}</p>
                         <div class="flex items-center space-x-2 text-xs text-dark-500">
                             <span>{{ lancamento.data|date:"d/m/Y" }}</span>
-                            {% if lancamento.categoria %}
-                            <span>·</span>
-                            <span>{{ lancamento.categoria.nome }}</span>
-                            {% endif %}
+                            {% if lancamento.categoria %}<span>·</span><span>{{ lancamento.categoria.nome }}</span>{% endif %}
                         </div>
                     </div>
                 </div>
@@ -115,13 +221,155 @@
             <h3 class="font-semibold text-dark-700 mb-1">Nenhum lançamento ainda</h3>
             <p class="text-dark-500 text-sm mb-4">Comece adicionando sua primeira transação</p>
             <a href="{% url 'adicionar_transacao' %}"
-               class="inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium tracking-wide text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors duration-150 shadow-sm">
-                <i data-lucide="plus" class="w-4 h-4"></i>
-                <span>Adicionar Lançamento</span>
+               class="inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors duration-150 shadow-sm">
+                <i data-lucide="plus" class="w-4 h-4"></i><span>Adicionar Lançamento</span>
             </a>
         </div>
         {% endif %}
     </div>
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    const isDark = document.documentElement.classList.contains('dark');
+    const gridColor  = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
+    const tickColor  = isDark ? '#8b949e' : '#64748b';
+    const tooltipBg  = isDark ? '#1c2128' : '#1e293b';
+
+    const PALETTE = ['#0c7a4e','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#84cc16','#ec4899'];
+
+    // Gráfico 1: Gastos por Categoria (Donut)
+    const catCanvas = document.getElementById('chartCategorias');
+    if (catCanvas) {
+        const catData = {{ chart_categorias|safe }};
+        new Chart(catCanvas, {
+            type: 'doughnut',
+            data: {
+                labels: catData.labels,
+                datasets: [{
+                    data: catData.data,
+                    backgroundColor: PALETTE,
+                    borderWidth: 2,
+                    borderColor: isDark ? '#161b22' : '#ffffff',
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: { color: tickColor, font: { size: 11 }, boxWidth: 12, padding: 12 }
+                    },
+                    tooltip: {
+                        backgroundColor: tooltipBg,
+                        callbacks: {
+                            label: ctx => ` R$ ${ctx.parsed.toFixed(2).replace('.', ',')}`
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Gráfico 2: Receita vs Despesa (Bar)
+    const evolCanvas = document.getElementById('chartEvolucao');
+    if (evolCanvas) {
+        const evolData = {{ chart_evolucao|safe }};
+        new Chart(evolCanvas, {
+            type: 'bar',
+            data: {
+                labels: evolData.labels,
+                datasets: [
+                    {
+                        label: 'Receitas',
+                        data: evolData.receitas,
+                        backgroundColor: 'rgba(12,122,78,0.75)',
+                        borderRadius: 4,
+                    },
+                    {
+                        label: 'Despesas',
+                        data: evolData.despesas,
+                        backgroundColor: 'rgba(239,68,68,0.75)',
+                        borderRadius: 4,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: tickColor, font: { size: 11 } } },
+                    tooltip: {
+                        backgroundColor: tooltipBg,
+                        callbacks: {
+                            label: ctx => ` R$ ${ctx.parsed.y.toFixed(2).replace('.', ',')}`
+                        }
+                    }
+                },
+                scales: {
+                    x: { grid: { color: gridColor }, ticks: { color: tickColor } },
+                    y: {
+                        grid: { color: gridColor },
+                        ticks: {
+                            color: tickColor,
+                            callback: v => `R$ ${v.toFixed(0)}`
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Gráfico 3: Saldo Acumulado (Line)
+    const saldoCanvas = document.getElementById('chartSaldo');
+    if (saldoCanvas) {
+        const saldoData = {{ chart_saldo|safe }};
+        new Chart(saldoCanvas, {
+            type: 'line',
+            data: {
+                labels: saldoData.labels,
+                datasets: [{
+                    label: 'Saldo',
+                    data: saldoData.saldo,
+                    borderColor: '#0c7a4e',
+                    backgroundColor: 'rgba(12,122,78,0.08)',
+                    pointBackgroundColor: '#0c7a4e',
+                    pointRadius: 4,
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: tooltipBg,
+                        callbacks: {
+                            label: ctx => ` R$ ${ctx.parsed.y.toFixed(2).replace('.', ',')}`
+                        }
+                    }
+                },
+                scales: {
+                    x: { grid: { color: gridColor }, ticks: { color: tickColor } },
+                    y: {
+                        grid: { color: gridColor },
+                        ticks: {
+                            color: tickColor,
+                            callback: v => `R$ ${v.toFixed(0)}`
+                        }
+                    }
+                }
+            }
+        });
+    }
+})();
+</script>
 {% endblock %}

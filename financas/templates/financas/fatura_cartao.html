@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Fatura {{ cartao.nome }} - Ordo Finance{% endblock %}
+{% block content %}
+
+<div class="h-full flex flex-col">
+
+<!-- Header -->
+<div class="flex-none flex justify-between items-center mb-4 animate-fade-in">
+    <div>
+        <h1 class="text-xl font-bold text-dark-800">Fatura — {{ cartao.nome }}</h1>
+        <p class="text-dark-500 text-sm">
+            Transações de {{ mes_ref|date:"F/Y" }}
+        </p>
+    </div>
+    <a href="{% url 'cartao_credito_list' %}"
+       class="inline-flex items-center space-x-2 px-3 py-2 text-sm font-medium text-neutral-600 bg-white border border-neutral-200 hover:bg-neutral-50 rounded-lg transition-colors">
+        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+        <span>Voltar</span>
+    </a>
+</div>
+
+<!-- Resumo da fatura -->
+<div class="flex-none grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4 animate-fade-in">
+    <!-- Total da fatura -->
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+        <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-1">Total da Fatura</p>
+        <p class="text-2xl font-bold text-dark-800">R$ {{ total|floatformat:2 }}</p>
+        <p class="text-xs text-neutral-400 mt-1">de R$ {{ cartao.limite|floatformat:2 }} de limite</p>
+    </div>
+    <!-- Uso do limite -->
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+        <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2">Uso do Limite</p>
+        <div class="flex items-center space-x-2">
+            <div class="flex-1 bg-gray-100 rounded-full h-2.5">
+                <div class="h-2.5 rounded-full transition-all duration-300
+                    {% if percentual_limite >= 90 %}bg-red-500
+                    {% elif percentual_limite >= 70 %}bg-amber-400
+                    {% else %}bg-green-500{% endif %}"
+                    style="width: {{ percentual_limite }}%"></div>
+            </div>
+            <span class="text-sm font-semibold text-neutral-700">{{ percentual_limite }}%</span>
+        </div>
+    </div>
+    <!-- Status + ação -->
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-col justify-between">
+        <div class="flex items-center space-x-2 mb-3">
+            {% if fatura.paga %}
+            <span class="inline-flex items-center space-x-1.5 px-2.5 py-1 bg-green-50 text-green-700 border border-green-200 rounded-full text-xs font-semibold">
+                <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+                <span>Paga em {{ fatura.data_pagamento|date:"d/m/Y" }}</span>
+            </span>
+            {% else %}
+            <span class="inline-flex items-center space-x-1.5 px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full text-xs font-semibold">
+                <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                <span>Pendente</span>
+            </span>
+            {% endif %}
+        </div>
+        <form method="post" action="{% url 'marcar_fatura_paga' fatura.pk %}">
+            {% csrf_token %}
+            <button type="submit"
+                class="w-full py-2 text-sm font-semibold rounded-lg transition-colors duration-150
+                {% if fatura.paga %}bg-neutral-100 text-neutral-600 hover:bg-neutral-200{% else %}bg-primary-500 text-white hover:bg-primary-600{% endif %}">
+                {% if fatura.paga %}Desmarcar como paga{% else %}Marcar como paga{% endif %}
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Navegação de mês -->
+<div class="flex-none flex items-center justify-between mb-3">
+    <a href="?mes={{ mes_anterior }}"
+       class="inline-flex items-center space-x-1 text-sm text-neutral-500 hover:text-neutral-800 transition-colors">
+        <i data-lucide="chevron-left" class="w-4 h-4"></i>
+        <span>Mês anterior</span>
+    </a>
+    <span class="text-sm font-semibold text-neutral-700">{{ mes_ref|date:"F Y" }}</span>
+    <a href="?mes={{ mes_proximo }}"
+       class="inline-flex items-center space-x-1 text-sm text-neutral-500 hover:text-neutral-800 transition-colors">
+        <span>Próximo mês</span>
+        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+    </a>
+</div>
+
+<!-- Tabela de transações -->
+{% if transacoes %}
+<div class="flex-1 min-h-0 flex flex-col bg-white rounded-2xl shadow-md border border-gray-100 animate-fade-in overflow-hidden">
+    <div class="flex-1 min-h-0 overflow-y-auto overflow-x-auto">
+        <table class="min-w-full divide-y divide-neutral-200">
+            <thead class="bg-gray-50 sticky top-0 z-10">
+                <tr class="text-neutral-500">
+                    <th class="px-5 py-3 text-xs font-medium text-left uppercase">Data</th>
+                    <th class="px-5 py-3 text-xs font-medium text-left uppercase">Descrição</th>
+                    <th class="px-5 py-3 text-xs font-medium text-left uppercase">Categoria</th>
+                    <th class="px-5 py-3 text-xs font-medium text-right uppercase">Valor</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-neutral-200">
+                {% for t in transacoes %}
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-5 py-3 text-sm text-dark-800 whitespace-nowrap">{{ t.data|date:"d/m/Y" }}</td>
+                    <td class="px-5 py-3 text-sm font-semibold text-dark-800">{{ t.descricao }}</td>
+                    <td class="px-5 py-3 whitespace-nowrap">
+                        <span class="bg-gray-100 text-gray-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">{{ t.categoria }}</span>
+                    </td>
+                    <td class="px-5 py-3 text-right text-sm font-bold text-red-600 whitespace-nowrap">
+                        R$ {{ t.valor|floatformat:2 }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% else %}
+<div class="flex-1 flex items-center justify-center">
+    {% url 'adicionar_transacao' as btn_url %}
+    {% include "includes/empty_state.html" with icon="credit-card" title="Nenhuma transação neste período" subtitle="Nenhuma despesa registrada neste cartão para este mês." btn_url=btn_url btn_text="Adicionar Transação" %}
+</div>
+{% endif %}
+
+</div>
+{% endblock %}

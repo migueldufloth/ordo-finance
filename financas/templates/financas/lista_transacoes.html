@@ -2,20 +2,37 @@
 {% block title %}Meus Lançamentos - Ordo Finance{% endblock %}
 {% block content %}
 
-<div x-data="{ show: false, url: '', name: '' }">
+<div x-data="{ show: false, url: '', name: '' }" class="h-full flex flex-col">
 
 <!-- Header -->
-<div class="flex justify-between items-center mb-4 animate-fade-in">
+<div class="flex-none flex justify-between items-center mb-4 animate-fade-in">
     <div>
         <h1 class="text-xl font-bold text-dark-800">Meus Lançamentos</h1>
         <p class="text-dark-500 text-sm">Todas as suas transações financeiras</p>
     </div>
     <div class="flex items-center space-x-2">
-        <a href="{% url 'gerar_relatorio' %}"
-            class="inline-flex items-center space-x-2 px-3 py-2 text-sm font-medium bg-white border border-neutral-200 text-neutral-600 hover:text-neutral-800 hover:bg-neutral-50 rounded-lg transition-colors duration-150">
-            <i data-lucide="file-down" class="w-4 h-4"></i>
-            <span>Exportar PDF</span>
-        </a>
+        <!-- Dropdown de exportação -->
+        <div x-data="{ open: false }" class="relative">
+            <button @click="open = !open" @click.outside="open = false"
+                class="inline-flex items-center space-x-2 px-3 py-2 text-sm font-medium bg-white border border-neutral-200 text-neutral-600 hover:text-neutral-800 hover:bg-neutral-50 rounded-lg transition-colors duration-150">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span>Exportar</span>
+                <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+            </button>
+            <div x-show="open" x-transition
+                 class="absolute right-0 mt-1 w-44 bg-white border border-neutral-200 rounded-xl shadow-lg z-20 py-1">
+                <a href="{% url 'gerar_relatorio' %}?{{ request.GET.urlencode }}"
+                   class="flex items-center space-x-2 px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50">
+                    <i data-lucide="file-text" class="w-4 h-4 text-neutral-400"></i>
+                    <span>Exportar PDF</span>
+                </a>
+                <a href="{% url 'exportar_csv' %}?{{ request.GET.urlencode }}"
+                   class="flex items-center space-x-2 px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50">
+                    <i data-lucide="table" class="w-4 h-4 text-neutral-400"></i>
+                    <span>Exportar CSV</span>
+                </a>
+            </div>
+        </div>
         <a href="{% url 'adicionar_transacao' %}"
             class="group inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium tracking-wide text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors duration-150 shadow-sm">
             <i data-lucide="plus" class="w-4 h-4 group-hover:rotate-90 transition-transform duration-150"></i>
@@ -24,42 +41,118 @@
     </div>
 </div>
 
-{% if transacoes %}
-<!-- Tabela -->
-<div class="bg-white rounded-2xl shadow-md border border-gray-100 animate-fade-in overflow-hidden">
-    <div class="overflow-x-auto">
+<!-- Filtros -->
+<form method="get" action="" class="flex-none mb-4 animate-fade-in">
+    <div class="bg-white border border-neutral-200 rounded-xl shadow-sm p-3">
+        <div class="flex flex-wrap gap-2 items-end">
+            <!-- Busca -->
+            <div class="flex-1 min-w-[160px]">
+                <label class="block text-xs font-medium text-neutral-500 mb-1">Buscar</label>
+                <div class="relative">
+                    <i data-lucide="search" class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400 pointer-events-none"></i>
+                    <input type="text" name="q" value="{{ filtros.q }}" placeholder="Descrição…"
+                           class="w-full pl-8 pr-3 py-1.5 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300">
+                </div>
+            </div>
+            <!-- Tipo -->
+            <div class="min-w-[110px]">
+                <label class="block text-xs font-medium text-neutral-500 mb-1">Tipo</label>
+                <select name="tipo" class="w-full px-2 py-1.5 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300">
+                    <option value="">Todos</option>
+                    <option value="RECEITA" {% if filtros.tipo == 'RECEITA' %}selected{% endif %}>Receita</option>
+                    <option value="DESPESA" {% if filtros.tipo == 'DESPESA' %}selected{% endif %}>Despesa</option>
+                </select>
+            </div>
+            <!-- Mês -->
+            <div class="min-w-[120px]">
+                <label class="block text-xs font-medium text-neutral-500 mb-1">Mês</label>
+                <select name="mes" class="w-full px-2 py-1.5 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300">
+                    <option value="">Todos</option>
+                    {% for num, nome in meses %}
+                    <option value="{{ num }}" {% if filtros.mes == num|stringformat:"i" %}selected{% endif %}>{{ nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <!-- Ano -->
+            <div class="min-w-[90px]">
+                <label class="block text-xs font-medium text-neutral-500 mb-1">Ano</label>
+                <select name="ano" class="w-full px-2 py-1.5 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300">
+                    <option value="">Todos</option>
+                    {% for ano in anos %}
+                    <option value="{{ ano }}" {% if filtros.ano == ano|stringformat:"i" %}selected{% endif %}>{{ ano }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <!-- Categoria -->
+            {% if categorias %}
+            <div class="min-w-[130px]">
+                <label class="block text-xs font-medium text-neutral-500 mb-1">Categoria</label>
+                <select name="categoria" class="w-full px-2 py-1.5 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300">
+                    <option value="">Todas</option>
+                    {% for cat in categorias %}
+                    <option value="{{ cat.pk }}" {% if filtros.categoria == cat.pk|stringformat:"i" %}selected{% endif %}>{{ cat.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            <!-- Cartão -->
+            {% if cartoes %}
+            <div class="min-w-[130px]">
+                <label class="block text-xs font-medium text-neutral-500 mb-1">Cartão</label>
+                <select name="cartao" class="w-full px-2 py-1.5 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300">
+                    <option value="">Todos</option>
+                    {% for cartao in cartoes %}
+                    <option value="{{ cartao.pk }}" {% if filtros.cartao == cartao.pk|stringformat:"i" %}selected{% endif %}>{{ cartao.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            <!-- Botões -->
+            <div class="flex gap-2">
+                <button type="submit"
+                    class="px-3 py-1.5 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors duration-150">
+                    Filtrar
+                </button>
+                <a href="{% url 'lista_transacoes' %}"
+                    class="px-3 py-1.5 text-sm font-medium text-neutral-600 bg-neutral-100 hover:bg-neutral-200 rounded-lg transition-colors duration-150">
+                    Limpar
+                </a>
+            </div>
+        </div>
+    </div>
+</form>
+
+{% if page_obj.object_list %}
+<div class="flex-1 min-h-0 flex flex-col bg-white rounded-2xl shadow-md border border-gray-100 animate-fade-in overflow-hidden">
+    <div class="flex-1 min-h-0 overflow-y-auto overflow-x-auto">
         <table class="min-w-full divide-y divide-neutral-200">
-            <thead class="bg-gray-50">
+            <thead class="bg-gray-50 sticky top-0 z-10">
                 <tr class="text-neutral-500">
                     <th class="px-5 py-3 text-xs font-medium text-left uppercase">
                         <div class="flex items-center space-x-1">
-                            <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
-                            <span>Data</span>
+                            <i data-lucide="calendar" class="w-3.5 h-3.5"></i><span>Data</span>
                         </div>
                     </th>
                     <th class="px-5 py-3 text-xs font-medium text-left uppercase">
                         <div class="flex items-center space-x-1">
-                            <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
-                            <span>Descrição</span>
+                            <i data-lucide="file-text" class="w-3.5 h-3.5"></i><span>Descrição</span>
                         </div>
                     </th>
                     <th class="px-5 py-3 text-xs font-medium text-left uppercase">
                         <div class="flex items-center space-x-1">
-                            <i data-lucide="tag" class="w-3.5 h-3.5"></i>
-                            <span>Categoria</span>
+                            <i data-lucide="tag" class="w-3.5 h-3.5"></i><span>Categoria</span>
                         </div>
                     </th>
                     <th class="px-5 py-3 text-xs font-medium text-right uppercase">
                         <div class="flex items-center justify-end space-x-1">
-                            <i data-lucide="dollar-sign" class="w-3.5 h-3.5"></i>
-                            <span>Valor</span>
+                            <i data-lucide="dollar-sign" class="w-3.5 h-3.5"></i><span>Valor</span>
                         </div>
                     </th>
                     <th class="px-5 py-3 text-xs font-medium text-center uppercase">Ações</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-neutral-200">
-                {% for transacao in transacoes %}
+                {% for transacao in page_obj %}
                 <tr class="hover:bg-gray-50 transition-colors">
                     <td class="px-5 py-3 whitespace-nowrap">
                         <div class="flex items-center space-x-2">
@@ -99,7 +192,7 @@
                     <td class="px-5 py-3 whitespace-nowrap text-center">
                         <div class="flex items-center justify-center space-x-1">
                             <a href="{% url 'editar_transacao' transacao.pk %}"
-                               class="p-1.5 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded-md transition-colors duration-150" title="Editar">
+                               class="p-1.5 text-neutral-400 hover:text-neutral-800 hover:bg-neutral-100 rounded-md transition-colors duration-150" title="Editar">
                                 <i data-lucide="pencil" class="w-4 h-4"></i>
                             </a>
                             <button @click="url = '{% url 'remover_transacao' transacao.pk %}'; name = '{{ transacao.descricao|escapejs }}'; show = true"
@@ -113,65 +206,29 @@
             </tbody>
         </table>
     </div>
+    {% include "includes/pagination.html" %}
+</div>
 
-    {% if transacoes.has_other_pages %}
-    <div class="flex items-center justify-between px-5 py-3 border-t border-neutral-200">
-        <p class="text-sm text-neutral-500">
-            Página <span class="font-medium text-neutral-800">{{ transacoes.number }}</span>
-            de <span class="font-medium text-neutral-800">{{ transacoes.paginator.num_pages }}</span>
-        </p>
-        <nav>
-            <ul class="flex items-center text-sm leading-tight bg-white border divide-x rounded-lg h-9 text-neutral-500 divide-neutral-200 border-neutral-200">
-                <li class="h-full">
-                    {% if transacoes.has_previous %}
-                    <a href="?page={{ transacoes.previous_page_number }}"
-                        class="relative inline-flex items-center h-full px-3 rounded-l-lg hover:text-neutral-900 hover:bg-neutral-50 transition-colors">
-                        <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
-                    </a>
-                    {% else %}
-                    <span class="relative inline-flex items-center h-full px-3 rounded-l-lg opacity-40 cursor-not-allowed">
-                        <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
-                    </span>
-                    {% endif %}
-                </li>
-                {% if transacoes.paginator.num_pages <= 10 %}
-                    {% for num in transacoes.paginator.page_range %}
-                    <li class="hidden md:block h-full">
-                        {% if num == transacoes.number %}
-                        <span class="relative inline-flex items-center h-full px-3.5 font-medium text-neutral-900 bg-gray-50">
-                            {{ num }}
-                            <span class="absolute bottom-0 left-0 right-0 h-0.5 bg-neutral-800"></span>
-                        </span>
-                        {% else %}
-                        <a href="?page={{ num }}"
-                            class="relative inline-flex items-center h-full px-3.5 group hover:text-neutral-900 hover:bg-neutral-50 transition-colors">
-                            {{ num }}
-                            <span class="absolute bottom-0 left-1/2 w-0 h-0.5 bg-neutral-800 transition-all duration-200 ease-out group-hover:left-0 group-hover:w-full"></span>
-                        </a>
-                        {% endif %}
-                    </li>
-                    {% endfor %}
-                {% endif %}
-                <li class="h-full">
-                    {% if transacoes.has_next %}
-                    <a href="?page={{ transacoes.next_page_number }}"
-                        class="relative inline-flex items-center h-full px-3 rounded-r-lg hover:text-neutral-900 hover:bg-neutral-50 transition-colors">
-                        <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                    </a>
-                    {% else %}
-                    <span class="relative inline-flex items-center h-full px-3 rounded-r-lg opacity-40 cursor-not-allowed">
-                        <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                    </span>
-                    {% endif %}
-                </li>
-            </ul>
-        </nav>
+{% else %}
+<div class="flex-1 flex items-center justify-center">
+    {% if filtros %}
+    <div class="text-center">
+        <div class="w-16 h-16 bg-neutral-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <i data-lucide="search-x" class="w-8 h-8 text-neutral-400"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-neutral-700 mb-1">Nenhum resultado encontrado</h3>
+        <p class="text-neutral-500 text-sm mb-4">Nenhuma transação corresponde aos filtros aplicados.</p>
+        <a href="{% url 'lista_transacoes' %}"
+           class="inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium text-primary-600 bg-primary-50 hover:bg-primary-100 rounded-lg transition-colors duration-150">
+            <i data-lucide="x" class="w-4 h-4"></i>
+            <span>Limpar filtros</span>
+        </a>
     </div>
+    {% else %}
+    {% url 'adicionar_transacao' as btn_url %}
+    {% include "includes/empty_state.html" with icon="receipt" title="Nenhum lançamento encontrado" subtitle="Comece adicionando sua primeira transação." btn_url=btn_url btn_text="Adicionar Transação" %}
     {% endif %}
 </div>
-{% else %}
-{% url 'adicionar_transacao' as btn_url %}
-{% include "includes/empty_state.html" with icon="receipt" title="Nenhum lançamento encontrado" subtitle="Comece adicionando sua primeira transação." btn_url=btn_url btn_text="Adicionar Transação" %}
 {% endif %}
 
 {% include "includes/modal_delete.html" %}

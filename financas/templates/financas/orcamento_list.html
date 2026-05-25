@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Orçamentos - Ordo Finance{% endblock %}
+{% block content %}
+
+<div x-data="{ show: false, url: '', name: '' }" class="h-full flex flex-col">
+
+<div class="flex-none flex justify-between items-center mb-4 animate-fade-in">
+    <div>
+        <h1 class="text-xl font-bold text-dark-800">Orçamentos</h1>
+        <p class="text-dark-500 text-sm">Defina limites mensais por categoria</p>
+    </div>
+    <a href="{% url 'orcamento_create' %}"
+        class="group inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors duration-150 shadow-sm">
+        <i data-lucide="plus" class="w-4 h-4 group-hover:rotate-90 transition-transform duration-150"></i>
+        <span>Novo Orçamento</span>
+    </a>
+</div>
+
+{% if object_list %}
+<div class="flex-1 min-h-0 flex flex-col bg-white rounded-2xl shadow-md border border-gray-100 animate-fade-in overflow-hidden">
+    <div class="flex-1 min-h-0 overflow-y-auto overflow-x-auto">
+        <table class="min-w-full divide-y divide-neutral-200">
+            <thead class="bg-gray-50 sticky top-0 z-10">
+                <tr class="text-neutral-500">
+                    <th class="px-5 py-3 text-xs font-medium text-left uppercase">Categoria</th>
+                    <th class="px-5 py-3 text-xs font-medium text-right uppercase">Limite Mensal</th>
+                    <th class="px-5 py-3 text-xs font-medium text-right uppercase">Gasto no Mês</th>
+                    <th class="px-5 py-3 text-xs font-medium text-right uppercase">Disponível</th>
+                    <th class="px-5 py-3 text-xs font-medium text-left uppercase">Progresso</th>
+                    <th class="px-5 py-3 text-xs font-medium text-center uppercase">Ações</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-neutral-200">
+                {% for orcamento in object_list %}
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-5 py-4">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="folder" class="w-4 h-4 text-gray-500"></i>
+                            </div>
+                            <span class="text-sm font-semibold text-dark-800">{{ orcamento.categoria.nome }}</span>
+                        </div>
+                    </td>
+                    <td class="px-5 py-4 text-right">
+                        <span class="text-sm font-semibold text-dark-800">R$ {{ orcamento.valor_mensal|floatformat:2 }}</span>
+                    </td>
+                    <td class="px-5 py-4 text-right">
+                        <span class="text-sm font-semibold {% if orcamento.percentual >= 90 %}text-red-600{% elif orcamento.percentual >= 70 %}text-amber-600{% else %}text-dark-800{% endif %}">
+                            R$ {{ orcamento.gasto_mes|floatformat:2 }}
+                        </span>
+                    </td>
+                    <td class="px-5 py-4 text-right">
+                        <span class="text-sm font-semibold {% if orcamento.disponivel == 0 %}text-red-600{% else %}text-green-600{% endif %}">
+                            R$ {{ orcamento.disponivel|floatformat:2 }}
+                        </span>
+                    </td>
+                    <td class="px-5 py-4 min-w-[140px]">
+                        <div class="flex items-center space-x-2">
+                            <div class="flex-1 bg-gray-100 rounded-full h-2">
+                                <div class="h-2 rounded-full transition-all duration-300
+                                    {% if orcamento.percentual >= 90 %}bg-red-500
+                                    {% elif orcamento.percentual >= 70 %}bg-amber-400
+                                    {% else %}bg-green-500{% endif %}"
+                                    style="width: {{ orcamento.percentual }}%"></div>
+                            </div>
+                            <span class="text-xs font-medium text-neutral-500 w-9 text-right">{{ orcamento.percentual }}%</span>
+                        </div>
+                    </td>
+                    <td class="px-5 py-4 text-center">
+                        <div class="flex items-center justify-center space-x-1">
+                            <a href="{% url 'orcamento_update' orcamento.pk %}"
+                               class="p-1.5 text-neutral-400 hover:text-neutral-800 hover:bg-neutral-100 rounded-md transition-colors" title="Editar">
+                                <i data-lucide="pencil" class="w-4 h-4"></i>
+                            </a>
+                            <button @click="url = '{% url 'orcamento_delete' orcamento.pk %}'; name = '{{ orcamento.categoria.nome|escapejs }}'; show = true"
+                               class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Remover">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% else %}
+<div class="flex-1 flex items-center justify-center">
+    {% url 'orcamento_create' as btn_url %}
+    {% include "includes/empty_state.html" with icon="target" title="Nenhum orçamento definido" subtitle="Defina limites mensais por categoria para controlar seus gastos." btn_url=btn_url btn_text="Criar Orçamento" %}
+</div>
+{% endif %}
+
+{% include "includes/modal_delete.html" %}
+</div>
+{% endblock %}

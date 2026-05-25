@@ -1,3 +1,6 @@
+import csv
+import decimal
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
@@ -5,48 +8,208 @@ from django.contrib import messages
 from django.db.models import Sum
 from django.http import HttpResponse
 from django.utils import timezone
-from django.conf import settings
 from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
-import requests
 
-from .models import Transacao, CartaoCredito, Categoria
-from .forms import TransacaoForm, CartaoCreditoForm, CategoriaForm
+from .models import Transacao, CartaoCredito, Categoria, Orcamento, FaturaCartao, TransacaoRecorrente
+from .forms import TransacaoForm, CartaoCreditoForm, CategoriaForm, OrcamentoForm, TransacaoRecorrenteForm
 
 
 @login_required
 def dashboard(request):
-    """Exibe o painel principal com o resumo financeiro."""
-    transacoes = Transacao.objects.filter(usuario=request.user)
-    
-    # Cálculos totais
-    total_receitas = transacoes.filter(tipo="RECEITA").aggregate(Sum("valor"))["valor__sum"] or 0
-    total_despesas = transacoes.filter(tipo="DESPESA").aggregate(Sum("valor"))["valor__sum"] or 0
-    
-    # Cálculos do mês atual (timezone-aware para America/Sao_Paulo)
+    """Exibe o painel principal com resumo financeiro, gráficos e orçamentos."""
+    import json
+    from dateutil.relativedelta import relativedelta
+    from django.db.models.functions import TruncMonth
+
+    usuario = request.user
     hoje = timezone.localdate()
-    transacoes_mes = transacoes.filter(data__year=hoje.year, data__month=hoje.month)
-    receitas_mes = transacoes_mes.filter(tipo="RECEITA").aggregate(Sum("valor"))["valor__sum"] or 0
-    despesas_mes = transacoes_mes.filter(tipo="DESPESA").aggregate(Sum("valor"))["valor__sum"] or 0
-    
-    contexto = {
-        "saldo_total": total_receitas - total_despesas,
-        "receitas_mes": receitas_mes,
-        "despesas_mes": despesas_mes,
-        "ultimos_lancamentos": transacoes.order_by("-data")[:5],
-    }
-    return render(request, "financas/dashboard.html", contexto)
+
+    try:
+        ano = int(request.GET.get('ano', hoje.year))
+        mes = int(request.GET.get('mes', hoje.month))
+        if not (1 <= mes <= 12):
+            mes = hoje.month
+    except (ValueError, TypeError):
+        ano, mes = hoje.year, hoje.month
+
+    transacoes = Transacao.objects.filter(usuario=usuario)
+    transacoes_mes = transacoes.filter(data__year=ano, data__month=mes)
+
+    receitas_mes = transacoes_mes.filter(tipo='RECEITA').aggregate(Sum('valor'))['valor__sum'] or 0
+    despesas_mes = transacoes_mes.filter(tipo='DESPESA').aggregate(Sum('valor'))['valor__sum'] or 0
+    total_receitas = transacoes.filter(tipo='RECEITA').aggregate(Sum('valor'))['valor__sum'] or 0
+    total_despesas = transacoes.filter(tipo='DESPESA').aggregate(Sum('valor'))['valor__sum'] or 0
+
+    # Gráfico 1: Gastos por categoria no mês (donut)
+    gastos_cat = list(
+        transacoes_mes.filter(tipo='DESPESA')
+        .values('categoria__nome')
+        .annotate(total=Sum('valor'))
+        .order_by('-total')
+    )
+    chart_categorias = json.dumps({
+        'labels': [g['categoria__nome'] for g in gastos_cat],
+        'data': [float(g['total']) for g in gastos_cat],
+    })
+
+    # Gráfico 2: Receita vs Despesa — últimos 6 meses (bar)
+    inicio_6m = (hoje.replace(day=1) - relativedelta(months=5))
+    evolucao = list(
+        transacoes.filter(data__gte=inicio_6m)
+        .annotate(mes_trunc=TruncMonth('data'))
+        .values('mes_trunc', 'tipo')
+        .annotate(total=Sum('valor'))
+        .order_by('mes_trunc')
+    )
+    MESES_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
+    labels_6m, receitas_bar, despesas_bar = [], [], []
+    cursor = inicio_6m
+    for _ in range(6):
+        labels_6m.append(f"{MESES_PT[cursor.month - 1]}/{str(cursor.year)[-2:]}")
+        rec = next((float(e['total']) for e in evolucao
+                    if e['mes_trunc'].year == cursor.year and e['mes_trunc'].month == cursor.month
+                    and e['tipo'] == 'RECEITA'), 0)
+        desp = next((float(e['total']) for e in evolucao
+                     if e['mes_trunc'].year == cursor.year and e['mes_trunc'].month == cursor.month
+                     and e['tipo'] == 'DESPESA'), 0)
+        receitas_bar.append(rec)
+        despesas_bar.append(desp)
+        cursor = cursor + relativedelta(months=1)
+    chart_evolucao = json.dumps({'labels': labels_6m, 'receitas': receitas_bar, 'despesas': despesas_bar})
+
+    # Gráfico 3: Saldo acumulado — últimos 6 meses (line)
+    saldo_base = float(
+        transacoes.filter(data__lt=inicio_6m, tipo='RECEITA').aggregate(Sum('valor'))['valor__sum'] or 0
+    ) - float(
+        transacoes.filter(data__lt=inicio_6m, tipo='DESPESA').aggregate(Sum('valor'))['valor__sum'] or 0
+    )
+    saldo_acumulado = []
+    saldo_cursor = saldo_base
+    cursor = inicio_6m
+    for i in range(6):
+        saldo_cursor += receitas_bar[i] - despesas_bar[i]
+        saldo_acumulado.append(round(saldo_cursor, 2))
+        cursor = cursor + relativedelta(months=1)
+    chart_saldo = json.dumps({'labels': labels_6m, 'saldo': saldo_acumulado})
+
+    # Orçamentos com gasto do mês selecionado
+    orcamentos = list(Orcamento.objects.filter(usuario=usuario).select_related('categoria'))
+    for o in orcamentos:
+        o.gasto_mes = transacoes_mes.filter(
+            tipo='DESPESA', categoria=o.categoria).aggregate(Sum('valor'))['valor__sum'] or decimal.Decimal('0')
+        o.disponivel = max(o.valor_mensal - o.gasto_mes, decimal.Decimal('0'))
+        o.percentual = min(int(o.gasto_mes / o.valor_mensal * 100), 100) if o.valor_mensal else 0
+
+    # Cartões com uso do limite no mês selecionado
+    cartoes = list(CartaoCredito.objects.filter(usuario=usuario))
+    for c in cartoes:
+        c.gasto_mes = transacoes_mes.filter(
+            tipo='DESPESA', cartao_credito=c).aggregate(Sum('valor'))['valor__sum'] or decimal.Decimal('0')
+        c.percentual_limite = min(int(c.gasto_mes / c.limite * 100), 100) if c.limite else 0
+
+    meses_lista = [
+        (1,'Janeiro'),(2,'Fevereiro'),(3,'Março'),(4,'Abril'),
+        (5,'Maio'),(6,'Junho'),(7,'Julho'),(8,'Agosto'),
+        (9,'Setembro'),(10,'Outubro'),(11,'Novembro'),(12,'Dezembro'),
+    ]
+    anos_lista = list(range(2023, hoje.year + 1))
+
+    return render(request, 'financas/dashboard.html', {
+        'saldo_total': total_receitas - total_despesas,
+        'receitas_mes': receitas_mes,
+        'despesas_mes': despesas_mes,
+        'ultimos_lancamentos': transacoes.order_by('-data')[:5],
+        'ano': ano,
+        'mes': mes,
+        'meses_lista': meses_lista,
+        'anos_lista': anos_lista,
+        'chart_categorias': chart_categorias,
+        'chart_evolucao': chart_evolucao,
+        'chart_saldo': chart_saldo,
+        'orcamentos': orcamentos,
+        'cartoes': cartoes,
+    })
+
+
+def _filtrar_transacoes(request):
+    """Retorna queryset de transações do usuário aplicando os filtros da query string."""
+    qs = Transacao.objects.filter(usuario=request.user).select_related('categoria', 'cartao_credito')
+    q = request.GET.get('q', '').strip()
+    if q:
+        qs = qs.filter(descricao__icontains=q)
+    tipo = request.GET.get('tipo')
+    if tipo in ('RECEITA', 'DESPESA'):
+        qs = qs.filter(tipo=tipo)
+    mes = request.GET.get('mes', '').strip()
+    ano = request.GET.get('ano', '').strip()
+    if mes and ano:
+        try:
+            qs = qs.filter(data__month=int(mes), data__year=int(ano))
+        except ValueError:
+            pass
+    categoria_pk = request.GET.get('categoria', '').strip()
+    if categoria_pk:
+        try:
+            qs = qs.filter(categoria__pk=int(categoria_pk))
+        except ValueError:
+            pass
+    cartao_pk = request.GET.get('cartao', '').strip()
+    if cartao_pk:
+        try:
+            qs = qs.filter(cartao_credito__pk=int(cartao_pk))
+        except ValueError:
+            pass
+    return qs
 
 
 @login_required
 def lista_transacoes(request):
-    """Lista as transações com paginação."""
-    transacoes_list = Transacao.objects.filter(usuario=request.user)
-    paginator = Paginator(transacoes_list, 10)
-    transacoes = paginator.get_page(request.GET.get('page'))
-    
-    return render(request, "financas/lista_transacoes.html", {"transacoes": transacoes})
+    """Lista as transações com filtros e paginação server-side."""
+    qs = _filtrar_transacoes(request)
+    paginator = Paginator(qs, 10)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    categorias = Categoria.objects.filter(usuario=request.user)
+    cartoes = CartaoCredito.objects.filter(usuario=request.user)
+    hoje = timezone.localdate()
+    anos = list(range(2023, hoje.year + 1))
+    meses = [
+        (1,'Janeiro'),(2,'Fevereiro'),(3,'Março'),(4,'Abril'),
+        (5,'Maio'),(6,'Junho'),(7,'Julho'),(8,'Agosto'),
+        (9,'Setembro'),(10,'Outubro'),(11,'Novembro'),(12,'Dezembro'),
+    ]
+
+    return render(request, "financas/lista_transacoes.html", {
+        'page_obj': page_obj,
+        'categorias': categorias,
+        'cartoes': cartoes,
+        'anos': anos,
+        'meses': meses,
+        'filtros': request.GET,
+    })
+
+
+@login_required
+def exportar_csv(request):
+    """Exporta as transações filtradas como CSV compatível com Excel."""
+    qs = _filtrar_transacoes(request)
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = 'attachment; filename="transacoes-ordo.csv"'
+    response.write('﻿')  # BOM UTF-8 para Excel
+    writer = csv.writer(response)
+    writer.writerow(['Data', 'Descrição', 'Tipo', 'Valor', 'Categoria', 'Cartão'])
+    for t in qs:
+        writer.writerow([
+            t.data.strftime('%d/%m/%Y'),
+            t.descricao,
+            t.get_tipo_display(),
+            f'{t.valor:.2f}'.replace('.', ','),
+            t.categoria.nome if t.categoria else '',
+            t.cartao_credito.nome if t.cartao_credito else '',
+        ])
+    return response
 
 
 @login_required
@@ -102,6 +265,23 @@ class BaseCartaoCreditoView(LoginRequiredMixin):
 
 class CartaoCreditoListView(BaseCartaoCreditoView, ListView):
     template_name = "financas/cartao_credito_list.html"
+    paginate_by = 6
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        hoje = timezone.localdate()
+        transacoes_mes = Transacao.objects.filter(
+            usuario=self.request.user,
+            tipo='DESPESA',
+            data__year=hoje.year,
+            data__month=hoje.month,
+        )
+        for cartao in context['object_list']:
+            cartao.gasto_mes = transacoes_mes.filter(
+                cartao_credito=cartao).aggregate(Sum('valor'))['valor__sum'] or decimal.Decimal('0')
+            cartao.percentual_limite = min(
+                int(cartao.gasto_mes / cartao.limite * 100), 100) if cartao.limite else 0
+        return context
 
 
 class CartaoCreditoCreateView(BaseCartaoCreditoView, CreateView):
@@ -145,6 +325,7 @@ class BaseCategoriaView(LoginRequiredMixin):
 
 class CategoriaListView(BaseCategoriaView, ListView):
     template_name = "financas/categoria_list.html"
+    paginate_by = 10
 
 class CategoriaCreateView(BaseCategoriaView, CreateView):
     form_class = CategoriaForm
@@ -178,32 +359,245 @@ class CategoriaDeleteView(BaseCategoriaView, DeleteView):
 
 @login_required
 def gerar_relatorio(request):
-    """Delega a geração do PDF ao microserviço FastAPI e retorna o arquivo."""
-    transacoes = Transacao.objects.filter(usuario=request.user).select_related('categoria')
-    dados = {
-        "usuario": request.user.username,
-        "transacoes": [
-            {
-                "data": str(t.data),
-                "descricao": t.descricao,
-                "tipo": t.tipo,
-                "valor": str(t.valor),
-                "categoria": t.categoria.nome if t.categoria else "",
-            }
-            for t in transacoes
-        ],
-    }
-    try:
-        resposta = requests.post(
-            f"{settings.REPORTS_API_URL}/relatorio/pdf",
-            json=dados,
-            timeout=30,
-        )
-        resposta.raise_for_status()
-    except requests.exceptions.RequestException:
-        messages.error(request, "Não foi possível gerar o relatório. Verifique se o serviço está disponível.")
-        return redirect("lista_transacoes")
+    """Gera relatório PDF das transações filtradas diretamente via fpdf2."""
+    from fpdf import FPDF
 
-    response = HttpResponse(resposta.content, content_type="application/pdf")
-    response["Content-Disposition"] = 'attachment; filename="relatorio-ordo.pdf"'
+    qs = _filtrar_transacoes(request)
+
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_margins(15, 15, 15)
+
+    # Cabeçalho
+    pdf.set_font('Helvetica', 'B', 16)
+    pdf.cell(0, 10, 'Ordo Finance - Relatório de Transações', ln=True, align='C')
+    pdf.set_font('Helvetica', '', 10)
+    pdf.cell(0, 6, f'Usuário: {request.user.username}', ln=True)
+    pdf.cell(0, 6, f'Gerado em: {timezone.localdate().strftime("%d/%m/%Y")}', ln=True)
+    pdf.ln(4)
+
+    # Cabeçalho da tabela
+    pdf.set_font('Helvetica', 'B', 9)
+    pdf.set_fill_color(240, 240, 240)
+    col_widths = [25, 70, 35, 22, 28]
+    headers = ['Data', 'Descrição', 'Categoria', 'Tipo', 'Valor (R$)']
+    for w, h in zip(col_widths, headers):
+        pdf.cell(w, 7, h, border=1, fill=True)
+    pdf.ln()
+
+    # Linhas da tabela
+    pdf.set_font('Helvetica', '', 9)
+    total_receitas = decimal.Decimal('0')
+    total_despesas = decimal.Decimal('0')
+    fill = False
+    pdf.set_fill_color(250, 250, 250)
+    for t in qs:
+        pdf.cell(col_widths[0], 6, t.data.strftime('%d/%m/%Y'), border=1, fill=fill)
+        pdf.cell(col_widths[1], 6, t.descricao[:45], border=1, fill=fill)
+        pdf.cell(col_widths[2], 6, (t.categoria.nome if t.categoria else '')[:22], border=1, fill=fill)
+        pdf.cell(col_widths[3], 6, t.get_tipo_display(), border=1, fill=fill)
+        pdf.cell(col_widths[4], 6, f'{t.valor:.2f}', border=1, align='R', fill=fill)
+        pdf.ln()
+        fill = not fill
+        if t.tipo == 'RECEITA':
+            total_receitas += t.valor
+        else:
+            total_despesas += t.valor
+
+    # Totais
+    pdf.ln(4)
+    pdf.set_font('Helvetica', 'B', 10)
+    pdf.cell(0, 7, f'Total Receitas:  R$ {total_receitas:.2f}', ln=True)
+    pdf.cell(0, 7, f'Total Despesas:  R$ {total_despesas:.2f}', ln=True)
+    saldo = total_receitas - total_despesas
+    pdf.cell(0, 7, f'Saldo:           R$ {saldo:.2f}', ln=True)
+
+    response = HttpResponse(bytes(pdf.output()), content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="relatorio-ordo.pdf"'
     return response
+
+
+# ─── Orçamento ────────────────────────────────────────────────────────────────
+
+class BaseOrcamentoView(LoginRequiredMixin):
+    model = Orcamento
+    success_url = reverse_lazy('orcamento_list')
+
+    def get_queryset(self):
+        return Orcamento.objects.filter(usuario=self.request.user).select_related('categoria')
+
+
+class OrcamentoListView(BaseOrcamentoView, ListView):
+    template_name = 'financas/orcamento_list.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        hoje = timezone.localdate()
+        transacoes_mes = Transacao.objects.filter(
+            usuario=self.request.user,
+            tipo='DESPESA',
+            data__year=hoje.year,
+            data__month=hoje.month,
+        )
+        for o in context['object_list']:
+            o.gasto_mes = transacoes_mes.filter(categoria=o.categoria).aggregate(
+                Sum('valor'))['valor__sum'] or decimal.Decimal('0')
+            o.disponivel = max(o.valor_mensal - o.gasto_mes, decimal.Decimal('0'))
+            o.percentual = min(int(o.gasto_mes / o.valor_mensal * 100), 100) if o.valor_mensal else 0
+        return context
+
+
+class OrcamentoCreateView(BaseOrcamentoView, CreateView):
+    form_class = OrcamentoForm
+    template_name = 'financas/orcamento_form.html'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        form.instance.usuario = self.request.user
+        messages.success(self.request, 'Orçamento criado com sucesso.')
+        return super().form_valid(form)
+
+
+class OrcamentoUpdateView(BaseOrcamentoView, UpdateView):
+    form_class = OrcamentoForm
+    template_name = 'financas/orcamento_form.html'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Orçamento atualizado com sucesso.')
+        return super().form_valid(form)
+
+
+class OrcamentoDeleteView(BaseOrcamentoView, DeleteView):
+    template_name = 'financas/confirm_delete.html'
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Orçamento removido.')
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['type'] = 'orçamento'
+        return context
+
+
+# ─── Fatura do Cartão ──────────────────────────────────────────────────────────
+
+@login_required
+def fatura_cartao(request, pk):
+    """Exibe as transações de um cartão num período e o status da fatura."""
+    from datetime import date as date_type
+    cartao = get_object_or_404(CartaoCredito, pk=pk, usuario=request.user)
+    mes_ref_str = request.GET.get('mes')
+    if mes_ref_str:
+        try:
+            mes_ref = date_type.fromisoformat(mes_ref_str + '-01')
+        except ValueError:
+            mes_ref = timezone.localdate().replace(day=1)
+    else:
+        mes_ref = timezone.localdate().replace(day=1)
+
+    fatura, _ = FaturaCartao.objects.get_or_create(
+        cartao_credito=cartao,
+        mes_referencia=mes_ref,
+        defaults={'usuario': request.user},
+    )
+    transacoes = Transacao.objects.filter(
+        usuario=request.user,
+        cartao_credito=cartao,
+        data__year=mes_ref.year,
+        data__month=mes_ref.month,
+    ).select_related('categoria')
+    total = transacoes.aggregate(Sum('valor'))['valor__sum'] or decimal.Decimal('0')
+    percentual_limite = min(int(total / cartao.limite * 100), 100) if cartao.limite else 0
+
+    from dateutil.relativedelta import relativedelta
+    mes_anterior = (mes_ref - relativedelta(months=1)).strftime('%Y-%m')
+    mes_proximo = (mes_ref + relativedelta(months=1)).strftime('%Y-%m')
+
+    return render(request, 'financas/fatura_cartao.html', {
+        'cartao': cartao,
+        'fatura': fatura,
+        'transacoes': transacoes,
+        'total': total,
+        'mes_ref': mes_ref,
+        'percentual_limite': percentual_limite,
+        'mes_anterior': mes_anterior,
+        'mes_proximo': mes_proximo,
+    })
+
+
+@login_required
+def marcar_fatura_paga(request, pk):
+    """Alterna o status de pagamento de uma fatura."""
+    fatura = get_object_or_404(FaturaCartao, pk=pk, usuario=request.user)
+    if request.method == 'POST':
+        fatura.paga = not fatura.paga
+        fatura.data_pagamento = timezone.localdate() if fatura.paga else None
+        fatura.save()
+        messages.success(request, 'Fatura marcada como paga.' if fatura.paga else 'Fatura desmarcada.')
+    return redirect(f"{reverse_lazy('fatura_cartao', kwargs={'pk': fatura.cartao_credito.pk})}?mes={fatura.mes_referencia.strftime('%Y-%m')}")
+
+
+# ─── Transações Recorrentes ───────────────────────────────────────────────────
+
+class BaseTransacaoRecorrenteView(LoginRequiredMixin):
+    model = TransacaoRecorrente
+    success_url = reverse_lazy('transacao_recorrente_list')
+
+    def get_queryset(self):
+        return TransacaoRecorrente.objects.filter(usuario=self.request.user).select_related('categoria', 'cartao_credito')
+
+
+class TransacaoRecorrenteListView(BaseTransacaoRecorrenteView, ListView):
+    template_name = 'financas/transacao_recorrente_list.html'
+
+
+class TransacaoRecorrenteCreateView(BaseTransacaoRecorrenteView, CreateView):
+    form_class = TransacaoRecorrenteForm
+    template_name = 'financas/transacao_recorrente_form.html'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        form.instance.usuario = self.request.user
+        messages.success(self.request, 'Transação recorrente criada com sucesso.')
+        return super().form_valid(form)
+
+
+class TransacaoRecorrenteUpdateView(BaseTransacaoRecorrenteView, UpdateView):
+    form_class = TransacaoRecorrenteForm
+    template_name = 'financas/transacao_recorrente_form.html'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Transação recorrente atualizada.')
+        return super().form_valid(form)
+
+
+class TransacaoRecorrenteDeleteView(BaseTransacaoRecorrenteView, DeleteView):
+    template_name = 'financas/confirm_delete.html'
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Transação recorrente removida.')
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['type'] = 'transação recorrente'
+        return context

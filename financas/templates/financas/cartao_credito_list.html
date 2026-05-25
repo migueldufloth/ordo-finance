@@ -2,13 +2,13 @@
 {% block title %}Meus Cartões - Ordo Finance{% endblock %}
 {% block content %}
 
-<div x-data="{ show: false, url: '', name: '' }">
+<div x-data="{ show: false, url: '', name: '' }" class="h-full flex flex-col">
 
 <!-- Header -->
-<div class="flex justify-between items-center mb-4 animate-fade-in">
+<div class="flex-none flex justify-between items-center mb-4 animate-fade-in">
     <div>
         <h1 class="text-xl font-bold text-dark-800">Meus Cartões de Crédito</h1>
-        <p class="text-dark-500 text-sm">Gerencie seus cartões e limites</p>
+        <p class="text-dark-500 text-sm">Gerencie seus cartões e acompanhe o uso do limite</p>
     </div>
     <a href="{% url 'cartao_credito_create' %}"
         class="group inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium tracking-wide text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors duration-150 shadow-sm">
@@ -18,59 +18,97 @@
 </div>
 
 {% if object_list %}
-<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-    {% for cartao in object_list %}
-    <div class="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-150">
 
-        <!-- Visual do cartão -->
-        <div class="h-36 card-gradient-{{ cartao.cor|lower }} text-white p-5 flex flex-col justify-between relative overflow-hidden">
-            <div class="absolute -top-8 -right-8 w-28 h-28 bg-white/10 rounded-full"></div>
-            <div class="absolute -bottom-4 -left-4 w-16 h-16 bg-white/5 rounded-full"></div>
-            <div class="flex justify-between items-start relative z-10">
-                <h3 class="font-bold text-lg">{{ cartao.nome }}</h3>
-                <div class="w-9 h-7 bg-gradient-to-br from-gray-300 to-gray-600 rounded-md flex items-center justify-center">
-                    <div class="w-5 h-3.5 bg-gray-700 rounded-sm"></div>
+<!-- Grid de cartões -->
+<div class="flex-1 min-h-0 overflow-y-auto">
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {% for cartao in object_list %}
+        <div class="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-150">
+
+            <!-- Visual do cartão -->
+            <div class="h-36 card-gradient-{{ cartao.cor|lower }} text-white p-5 flex flex-col justify-between relative overflow-hidden">
+                <div class="absolute -top-8 -right-8 w-28 h-28 bg-white/10 rounded-full"></div>
+                <div class="absolute -bottom-4 -left-4 w-16 h-16 bg-white/5 rounded-full"></div>
+                <div class="flex justify-between items-start relative z-10">
+                    <h3 class="font-bold text-lg">{{ cartao.nome }}</h3>
+                    <div class="w-9 h-7 bg-gradient-to-br from-gray-300 to-gray-600 rounded-md flex items-center justify-center">
+                        <div class="w-5 h-3.5 bg-gray-700 rounded-sm"></div>
+                    </div>
+                </div>
+                <p class="text-base font-mono tracking-wider relative z-10 opacity-80">•••• •••• •••• 1234</p>
+            </div>
+
+            <!-- Info -->
+            <div class="p-4">
+                <div class="grid grid-cols-3 gap-3 text-center mb-3">
+                    <div>
+                        <p class="text-xs text-dark-500 mb-0.5">Limite</p>
+                        <p class="font-bold text-dark-800 text-sm">R$ {{ cartao.limite|floatformat:2 }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-dark-500 mb-0.5">Fechamento</p>
+                        <p class="font-bold text-dark-800 text-sm">Dia {{ cartao.dia_fechamento }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-dark-500 mb-0.5">Vencimento</p>
+                        <p class="font-bold text-dark-800 text-sm">Dia {{ cartao.dia_vencimento }}</p>
+                    </div>
+                </div>
+
+                <!-- Uso do limite no mês -->
+                <div class="mb-3">
+                    <div class="flex justify-between items-center mb-1">
+                        <p class="text-xs text-neutral-500">Usado este mês</p>
+                        <p class="text-xs font-semibold
+                            {% if cartao.percentual_limite >= 90 %}text-red-600
+                            {% elif cartao.percentual_limite >= 70 %}text-amber-600
+                            {% else %}text-neutral-600{% endif %}">
+                            R$ {{ cartao.gasto_mes|floatformat:2 }} ({{ cartao.percentual_limite }}%)
+                        </p>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-1.5">
+                        <div class="h-1.5 rounded-full transition-all duration-300
+                            {% if cartao.percentual_limite >= 90 %}bg-red-500
+                            {% elif cartao.percentual_limite >= 70 %}bg-amber-400
+                            {% else %}bg-green-500{% endif %}"
+                            style="width: {{ cartao.percentual_limite }}%"></div>
+                    </div>
+                </div>
+
+                <!-- Ações -->
+                <div class="flex space-x-2">
+                    <a href="{% url 'fatura_cartao' cartao.pk %}"
+                        class="flex-1 inline-flex items-center justify-center space-x-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-medium py-2 rounded-lg transition-colors duration-150 text-sm">
+                        <i data-lucide="receipt" class="w-3.5 h-3.5"></i>
+                        <span>Fatura</span>
+                    </a>
+                    <a href="{% url 'cartao_credito_update' cartao.pk %}"
+                        class="flex-1 inline-flex items-center justify-center space-x-1.5 bg-primary-500 hover:bg-primary-600 text-white font-medium py-2 rounded-lg transition-colors duration-150 text-sm">
+                        <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                        <span>Editar</span>
+                    </a>
+                    <button @click="url = '{% url 'cartao_credito_delete' cartao.pk %}'; name = '{{ cartao.nome|escapejs }}'; show = true"
+                        class="inline-flex items-center justify-center px-3 py-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-150">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
                 </div>
             </div>
-            <p class="text-base font-mono tracking-wider relative z-10 opacity-80">•••• •••• •••• 1234</p>
         </div>
-
-        <!-- Info -->
-        <div class="p-4">
-            <div class="grid grid-cols-3 gap-3 text-center mb-4">
-                <div>
-                    <p class="text-xs text-dark-500 mb-0.5">Limite</p>
-                    <p class="font-bold text-dark-800 text-sm">R$ {{ cartao.limite|floatformat:2 }}</p>
-                </div>
-                <div>
-                    <p class="text-xs text-dark-500 mb-0.5">Fechamento</p>
-                    <p class="font-bold text-dark-800 text-sm">Dia {{ cartao.dia_fechamento }}</p>
-                </div>
-                <div>
-                    <p class="text-xs text-dark-500 mb-0.5">Vencimento</p>
-                    <p class="font-bold text-dark-800 text-sm">Dia {{ cartao.dia_vencimento }}</p>
-                </div>
-            </div>
-
-            <div class="flex space-x-2">
-                <a href="{% url 'cartao_credito_update' cartao.pk %}"
-                    class="flex-1 inline-flex items-center justify-center space-x-1.5 bg-primary-500 hover:bg-primary-600 text-white font-medium py-2 rounded-lg transition-colors duration-150 text-sm">
-                    <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
-                    <span>Editar</span>
-                </a>
-                <button @click="url = '{% url 'cartao_credito_delete' cartao.pk %}'; name = '{{ cartao.nome|escapejs }}'; show = true"
-                    class="inline-flex items-center justify-center px-3 py-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-150">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                </button>
-            </div>
-        </div>
+        {% endfor %}
     </div>
-    {% endfor %}
 </div>
 
+{% if page_obj.has_other_pages %}
+<div class="flex-none mt-4 bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
+    {% include "includes/pagination.html" %}
+</div>
+{% endif %}
+
 {% else %}
-{% url 'cartao_credito_create' as btn_url %}
-{% include "includes/empty_state.html" with icon="credit-card" title="Nenhum cartão cadastrado" subtitle="Adicione seus cartões para controlar limites e vencimentos." btn_url=btn_url btn_text="Adicionar Cartão" %}
+<div class="flex-1 flex items-center justify-center">
+    {% url 'cartao_credito_create' as btn_url %}
+    {% include "includes/empty_state.html" with icon="credit-card" title="Nenhum cartão cadastrado" subtitle="Adicione seus cartões para controlar limites e vencimentos." btn_url=btn_url btn_text="Adicionar Cartão" %}
+</div>
 {% endif %}
 
 {% include "includes/modal_delete.html" %}

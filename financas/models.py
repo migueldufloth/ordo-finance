@@ -88,6 +88,97 @@ class Transacao(models.Model):
         return f"[{self.data}] {self.descricao} - R$ {self.valor}"
 
 
+class Orcamento(models.Model):
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE)
+    valor_mensal = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(decimal.Decimal('0.01'))],
+        verbose_name='Limite Mensal',
+    )
+
+    class Meta:
+        unique_together = ('usuario', 'categoria')
+        verbose_name = 'Orçamento'
+        verbose_name_plural = 'Orçamentos'
+
+    def __str__(self):
+        return f'{self.categoria.nome}: R$ {self.valor_mensal}'
+
+
+class FaturaCartao(models.Model):
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    cartao_credito = models.ForeignKey(CartaoCredito, on_delete=models.CASCADE)
+    mes_referencia = models.DateField(verbose_name='Mês de Referência')
+    paga = models.BooleanField(default=False, verbose_name='Fatura Paga')
+    data_pagamento = models.DateField(null=True, blank=True, verbose_name='Data de Pagamento')
+
+    class Meta:
+        unique_together = ('cartao_credito', 'mes_referencia')
+        verbose_name = 'Fatura do Cartão'
+        verbose_name_plural = 'Faturas do Cartão'
+        ordering = ['-mes_referencia']
+
+    def __str__(self):
+        return f'{self.cartao_credito.nome} — {self.mes_referencia.strftime("%m/%Y")}'
+
+    @property
+    def valor_total(self):
+        from django.db.models import Sum
+        return self.cartao_credito.transacao_set.filter(
+            usuario=self.usuario,
+            data__year=self.mes_referencia.year,
+            data__month=self.mes_referencia.month,
+        ).aggregate(Sum('valor'))['valor__sum'] or decimal.Decimal('0')
+
+
+class TransacaoRecorrente(models.Model):
+    class Frequencia(models.TextChoices):
+        MENSAL = 'MENSAL', 'Mensal'
+        QUINZENAL = 'QUINZENAL', 'Quinzenal'
+        SEMANAL = 'SEMANAL', 'Semanal'
+        ANUAL = 'ANUAL', 'Anual'
+
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    tipo = models.CharField(max_length=7, choices=Transacao.Tipo.choices)
+    descricao = models.CharField(max_length=200, verbose_name='Descrição')
+    valor = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(decimal.Decimal('0.01'))],
+    )
+    categoria = models.ForeignKey(Categoria, on_delete=models.PROTECT)
+    cartao_credito = models.ForeignKey(
+        CartaoCredito, on_delete=models.SET_NULL, null=True, blank=True,
+    )
+    frequencia = models.CharField(max_length=10, choices=Frequencia.choices, verbose_name='Frequência')
+    proxima_ocorrencia = models.DateField(verbose_name='Próxima Ocorrência')
+    ativa = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = 'Transação Recorrente'
+        verbose_name_plural = 'Transações Recorrentes'
+        ordering = ['proxima_ocorrencia']
+
+    def __str__(self):
+        return f'{self.descricao} ({self.get_frequencia_display()})'
+
+    def avancar_proxima_ocorrencia(self):
+        from dateutil.relativedelta import relativedelta
+        from datetime import timedelta
+        d = self.proxima_ocorrencia
+        if self.frequencia == 'MENSAL':
+            self.proxima_ocorrencia = d + relativedelta(months=1)
+        elif self.frequencia == 'QUINZENAL':
+            self.proxima_ocorrencia = d + timedelta(days=15)
+        elif self.frequencia == 'SEMANAL':
+            self.proxima_ocorrencia = d + timedelta(weeks=1)
+        elif self.frequencia == 'ANUAL':
+            self.proxima_ocorrencia = d + relativedelta(years=1)
+        self.save(update_fields=['proxima_ocorrencia'])
+
+
 
 
 
