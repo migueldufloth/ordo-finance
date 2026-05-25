@@ -22,11 +22,26 @@ class BaseCategoriaView <<Mixin>> {
   +success_url : str
   +get_queryset() : QuerySet
 }
+class BaseOrcamentoView <<Mixin>> {
+  +model : Orcamento
+  +success_url : str
+  +get_queryset() : QuerySet
+}
+class BaseTransacaoRecorrenteView <<Mixin>> {
+  +model : TransacaoRecorrente
+  +success_url : str
+  +get_queryset() : QuerySet
+}
 BaseCartaoCreditoView --|> LoginRequiredMixin
 BaseCategoriaView --|> LoginRequiredMixin
+BaseOrcamentoView --|> LoginRequiredMixin
+BaseTransacaoRecorrenteView --|> LoginRequiredMixin
 
 ' --- CBVs CartaoCredito ---
-class CartaoCreditoListView <<View>> { }
+class CartaoCreditoListView <<View>> {
+  +paginate_by : int = 6
+  +get_context_data(**kwargs) : dict
+}
 class CartaoCreditoCreateView <<View>> {
   +form_class : CartaoCreditoForm
   +form_valid(form) : response
@@ -48,7 +63,9 @@ CartaoCreditoDeleteView --|> BaseCartaoCreditoView
 CartaoCreditoDeleteView --|> DeleteView
 
 ' --- CBVs Categoria ---
-class CategoriaListView <<View>> { }
+class CategoriaListView <<View>> {
+  +paginate_by : int = 10
+}
 class CategoriaCreateView <<View>> {
   +form_class : CategoriaForm
   +form_valid(form) : response
@@ -69,16 +86,72 @@ CategoriaUpdateView --|> UpdateView
 CategoriaDeleteView --|> BaseCategoriaView
 CategoriaDeleteView --|> DeleteView
 
+' --- CBVs Orçamento ---
+class OrcamentoListView <<View>> {
+  +get_context_data(**kwargs) : dict
+}
+class OrcamentoCreateView <<View>> {
+  +form_class : OrcamentoForm
+  +get_form_kwargs() : dict
+  +form_valid(form) : response
+}
+class OrcamentoUpdateView <<View>> {
+  +form_class : OrcamentoForm
+  +get_form_kwargs() : dict
+  +form_valid(form) : response
+}
+class OrcamentoDeleteView <<View>> {
+  +get_context_data(**kwargs) : dict
+}
+OrcamentoListView --|> BaseOrcamentoView
+OrcamentoListView --|> ListView
+OrcamentoCreateView --|> BaseOrcamentoView
+OrcamentoCreateView --|> CreateView
+OrcamentoUpdateView --|> BaseOrcamentoView
+OrcamentoUpdateView --|> UpdateView
+OrcamentoDeleteView --|> BaseOrcamentoView
+OrcamentoDeleteView --|> DeleteView
+
+' --- CBVs TransacaoRecorrente ---
+class TransacaoRecorrenteListView <<View>> { }
+class TransacaoRecorrenteCreateView <<View>> {
+  +form_class : TransacaoRecorrenteForm
+  +get_form_kwargs() : dict
+  +form_valid(form) : response
+}
+class TransacaoRecorrenteUpdateView <<View>> {
+  +form_class : TransacaoRecorrenteForm
+  +get_form_kwargs() : dict
+  +form_valid(form) : response
+}
+class TransacaoRecorrenteDeleteView <<View>> {
+  +get_context_data(**kwargs) : dict
+}
+TransacaoRecorrenteListView --|> BaseTransacaoRecorrenteView
+TransacaoRecorrenteListView --|> ListView
+TransacaoRecorrenteCreateView --|> BaseTransacaoRecorrenteView
+TransacaoRecorrenteCreateView --|> CreateView
+TransacaoRecorrenteUpdateView --|> BaseTransacaoRecorrenteView
+TransacaoRecorrenteUpdateView --|> UpdateView
+TransacaoRecorrenteDeleteView --|> BaseTransacaoRecorrenteView
+TransacaoRecorrenteDeleteView --|> DeleteView
+
 ' --- FBVs (representadas como classes) ---
 class DashboardView <<FBV>> {
   +dashboard(request) : HttpResponse
 }
 class TransacaoViews <<FBV>> {
+  +_filtrar_transacoes(request) : QuerySet
   +lista_transacoes(request) : HttpResponse
   +adicionar_transacao(request) : HttpResponse
   +editar_transacao(request, pk) : HttpResponse
   +remover_transacao(request, pk) : HttpResponse
   +gerar_relatorio(request) : HttpResponse
+  +exportar_csv(request) : HttpResponse
+}
+class FaturaViews <<FBV>> {
+  +fatura_cartao(request, pk) : HttpResponse
+  +marcar_fatura_paga(request, pk) : HttpResponse
 }
 
 ' --- Formulários ---
@@ -92,8 +165,18 @@ class CartaoCreditoForm <<Form>> {
 class CategoriaForm <<Form>> {
   +campos : [nome]
 }
+class OrcamentoForm <<Form>> {
+  +campos : [categoria, valor_mensal]
+  +__init__(user) : exclui categorias já com orçamento
+}
+class TransacaoRecorrenteForm <<Form>> {
+  +campos : [tipo, descricao, valor, categoria, cartao_credito, frequencia, proxima_ocorrencia, ativa]
+  +__init__(user) : filtra querysets por usuário
+}
 TransacaoForm --|> ModelForm
 CartaoCreditoForm --|> ModelForm
 CategoriaForm --|> ModelForm
+OrcamentoForm --|> ModelForm
+TransacaoRecorrenteForm --|> ModelForm
 
 @enduml

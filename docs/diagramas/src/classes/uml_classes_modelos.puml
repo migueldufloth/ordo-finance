@@ -19,6 +19,13 @@ enum CorCartao <<Enum>> {
   CINZA = "GRAY"
 }
 
+enum Frequencia <<Enum>> {
+  MENSAL = "MENSAL"
+  QUINZENAL = "QUINZENAL"
+  SEMANAL = "SEMANAL"
+  ANUAL = "ANUAL"
+}
+
 class User <<Entity>> {
   +id : int
   +username : str
@@ -64,12 +71,62 @@ class Transacao <<Entity>> {
   ' ordering: [-data]
 }
 
+class Orcamento <<Entity>> {
+  +id : int
+  +usuario_id : int
+  +categoria_id : int
+  +valor_mensal : Decimal
+  --
+  __str__() : str
+  ' unique_together: (usuario, categoria)
+}
+
+class FaturaCartao <<Entity>> {
+  +id : int
+  +usuario_id : int
+  +cartao_credito_id : int
+  +mes_referencia : date
+  +paga : bool
+  +data_pagamento : date
+  --
+  __str__() : str
+  valor_total : Decimal <<property>>
+  ' unique_together: (cartao_credito, mes_referencia)
+  ' ordering: [-mes_referencia]
+}
+
+class TransacaoRecorrente <<Entity>> {
+  +id : int
+  +usuario_id : int
+  +tipo : TipoTransacao
+  +descricao : str
+  +valor : Decimal
+  +categoria_id : int
+  +cartao_credito_id : int
+  +frequencia : Frequencia
+  +proxima_ocorrencia : date
+  +ativa : bool
+  --
+  __str__() : str
+  avancar_proxima_ocorrencia() : void
+  ' ordering: [proxima_ocorrencia]
+}
+
 User "1" --> "0..*" Categoria : possui
 User "1" --> "0..*" CartaoCredito : possui
 User "1" --> "0..*" Transacao : registra
+User "1" --> "0..*" Orcamento : define
+User "1" --> "0..*" FaturaCartao : acompanha
+User "1" --> "0..*" TransacaoRecorrente : programa
 Categoria "1" --> "0..*" Transacao : classifica\n<<PROTECT>>
+Categoria "1" --> "0..*" Orcamento : limita\n<<CASCADE>>
+Categoria "1" --> "0..*" TransacaoRecorrente : classifica\n<<PROTECT>>
 CartaoCredito "0..1" --> "0..*" Transacao : vincula\n<<CASCADE>>
+CartaoCredito "1" --> "0..*" FaturaCartao : gera\n<<CASCADE>>
+CartaoCredito "0..1" --> "0..*" TransacaoRecorrente : associa\n<<SET_NULL>>
 TipoTransacao <-- Transacao : usa
+TipoTransacao <-- TransacaoRecorrente : usa
 CorCartao <-- CartaoCredito : usa
+Frequencia <-- TransacaoRecorrente : usa
 
 @enduml
