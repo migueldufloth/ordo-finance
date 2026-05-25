@@ -84,7 +84,7 @@
 
                         <div class="mt-5">
                             <button type="submit"
-                                    class="w-full flex items-center justify-center space-x-2 bg-primary-500 hover:bg-primary-600 text-white font-semibold py-2.5 px-4 rounded-xl transition-all duration-150 shadow-md hover:shadow-lg">
+                                    class="w-full inline-flex items-center justify-center space-x-2 px-4 py-2.5 text-sm font-medium tracking-wide text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors duration-150 shadow-sm">
                                 <i data-lucide="log-in" class="w-4 h-4"></i>
                                 <span>Entrar</span>
                             </button>
@@ -107,7 +107,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('login-error')) {
-        showToast('Usuário ou senha incorretos. Tente novamente.', 'error');
+        toast('Usuário ou senha incorretos. Tente novamente.', { type: 'error' });
     }
 });
 </script>

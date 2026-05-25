@@ -18,10 +18,6 @@
         {% if user.is_authenticated %}</div>{% endif %}
     </main>
 
-    <div id="toast-container"
-         class="fixed top-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none"
-         style="width: min(20rem, calc(100vw - 2rem))"></div>
-
     {% if messages %}
     <div id="django-messages" hidden>
         {% for message in messages %}
@@ -30,6 +26,7 @@
     </div>
     {% endif %}
 
+    {% include "includes/toasts.html" %}
     {% include "includes/scripts.html" %}
     {% block extra_js %}{% endblock %}
 </body>

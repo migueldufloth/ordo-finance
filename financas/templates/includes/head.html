@@ -11,6 +11,8 @@
 <!-- Tailwind CDN -->
 <script src="https://cdn.tailwindcss.com"></script>
 
+<!-- Alpine.js Focus Plugin -->
+<script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/focus@3.x.x/dist/cdn.min.js"></script>
 <!-- Alpine.js CDN -->
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
@@ -82,6 +84,8 @@
 </script>
 
 <style>
+    [x-cloak] { display: none !important; }
+
     * {
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
     }
@@ -264,55 +268,57 @@
         box-shadow: 0 10px 25px -5px rgba(0,0,0,0.6), 0 4px 10px -2px rgba(0,0,0,0.4) !important;
     }
 
-    /* ── Formulários globais ────────────────────────────────── */
+    /* ── Formulários globais (Pines) ────────────────────────── */
     .form-group input,
     .form-group select,
     .form-group textarea {
         width: 100%;
-        padding: 10px 12px;
-        border: 2px solid #e2e8f0;
-        border-radius: 10px;
-        font-size: 15px;
-        transition: all 0.3s ease;
-        background-color: #f8fafc;
+        height: 2.5rem;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        background-color: #ffffff;
         color: #1e293b;
     }
+    .form-group textarea { height: auto; min-height: 5rem; }
     .form-group input:focus,
     .form-group select:focus,
     .form-group textarea:focus {
         outline: none;
         border-color: #0c7a4e;
-        background-color: #ffffff;
-        box-shadow: 0 0 0 3px rgba(12, 122, 78, 0.12);
+        box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px rgba(12, 122, 78, 0.18);
     }
-    .form-group input[type="number"] { padding-left: 35px; }
+    .form-group input[type="number"] { padding-left: 2.25rem; }
     .form-group select {
         background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
         background-position: right 10px center;
         background-repeat: no-repeat;
         background-size: 16px;
-        padding-right: 35px;
+        padding-right: 2.25rem;
         appearance: none;
     }
 
-    /* Login */
+    /* Login (Pines) */
     .login-input {
         width: 100%;
-        padding: 12px 16px;
-        border: 2px solid #e2e8f0;
-        border-radius: 12px;
-        font-size: 15px;
-        transition: all 0.3s ease;
-        background-color: #f8fafc;
+        padding: 0.625rem 0.875rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        background-color: #ffffff;
         color: #1e293b;
     }
     .login-input:focus {
         outline: none;
         border-color: #0c7a4e;
-        background-color: #ffffff;
-        box-shadow: 0 0 0 3px rgba(12, 122, 78, 0.12);
+        box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px rgba(12, 122, 78, 0.18);
     }
-    .login-input::placeholder { color: #94a3b8; }
+    .login-input::placeholder { color: #9ca3af; }
 </style>
 
 <script>

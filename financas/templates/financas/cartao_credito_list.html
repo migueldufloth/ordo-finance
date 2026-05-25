@@ -11,7 +11,7 @@
         <p class="text-dark-500 text-sm">Gerencie seus cartões e limites</p>
     </div>
     <a href="{% url 'cartao_credito_create' %}"
-        class="group bg-primary-500 hover:bg-primary-600 text-white font-semibold px-4 py-2 rounded-xl transition-all duration-150 flex items-center space-x-2 shadow-md hover:shadow-lg text-sm">
+        class="group inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium tracking-wide text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors duration-150 shadow-sm">
         <i data-lucide="plus" class="w-4 h-4 group-hover:rotate-90 transition-transform duration-150"></i>
         <span>Novo Cartão</span>
     </a>
@@ -54,12 +54,12 @@
 
             <div class="flex space-x-2">
                 <a href="{% url 'cartao_credito_update' cartao.pk %}"
-                    class="flex-1 flex items-center justify-center space-x-1.5 bg-primary-500 hover:bg-primary-600 text-white font-medium py-2 rounded-xl transition-colors text-sm">
+                    class="flex-1 inline-flex items-center justify-center space-x-1.5 bg-primary-500 hover:bg-primary-600 text-white font-medium py-2 rounded-lg transition-colors duration-150 text-sm">
                     <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
                     <span>Editar</span>
                 </a>
                 <button @click="url = '{% url 'cartao_credito_delete' cartao.pk %}'; name = '{{ cartao.nome|escapejs }}'; show = true"
-                    class="flex items-center justify-center px-3 text-red-500 hover:text-red-700 hover:bg-red-100 rounded-xl transition-colors">
+                    class="inline-flex items-center justify-center px-3 py-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-150">
                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                 </button>
             </div>
