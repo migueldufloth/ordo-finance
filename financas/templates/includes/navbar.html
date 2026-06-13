@@ -40,11 +40,6 @@
                     <i data-lucide="credit-card" class="w-4 h-4"></i>
                     <span>Cartões</span>
                 </a>
-                <a href="{% url 'categoria_list' %}"
-                    class="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if request.resolver_match.url_name == 'categoria_list' %}text-primary-600 bg-primary-50{% else %}text-dark-500 hover:text-dark-800 hover:bg-gray-100{% endif %}">
-                    <i data-lucide="folder" class="w-4 h-4"></i>
-                    <span>Categorias</span>
-                </a>
             </div>
 
             <!-- Desktop User Menu -->
@@ -89,6 +84,18 @@
                                 <span>Auto</span>
                             </button>
                         </div>
+                    </div>
+
+                    <div class="border-t border-gray-100 mx-2 my-1"></div>
+
+                    <!-- Configurações -->
+                    <div class="px-2 pb-1">
+                        <p class="text-xs font-semibold text-dark-400 uppercase tracking-wider mb-1 px-1">Configurações</p>
+                        <a href="{% url 'categoria_list' %}"
+                            class="flex items-center space-x-2.5 w-full px-3 py-2 text-sm rounded-xl transition-colors {% if request.resolver_match.url_name == 'categoria_list' or request.resolver_match.url_name == 'categoria_create' or request.resolver_match.url_name == 'categoria_update' %}text-primary-600 bg-primary-50{% else %}text-dark-600 hover:bg-gray-50{% endif %}">
+                            <i data-lucide="folder" class="w-4 h-4"></i>
+                            <span>Categorias</span>
+                        </a>
                     </div>
 
                     <div class="border-t border-gray-100 mx-2 mb-1"></div>
@@ -140,6 +147,9 @@
             <a href="{% url 'cartao_credito_list' %}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium {% if request.resolver_match.url_name == 'cartao_credito_list' %}text-primary-600 bg-primary-50{% else %}text-dark-600 hover:bg-gray-50{% endif %}">
                 <i data-lucide="credit-card" class="w-4 h-4"></i><span>Cartões</span>
             </a>
+        </div>
+        <div class="px-4 pb-2 border-t border-gray-100 pt-2">
+            <p class="text-xs font-semibold text-dark-400 uppercase tracking-wider mb-1 px-1">Configurações</p>
             <a href="{% url 'categoria_list' %}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium {% if request.resolver_match.url_name == 'categoria_list' %}text-primary-600 bg-primary-50{% else %}text-dark-600 hover:bg-gray-50{% endif %}">
                 <i data-lucide="folder" class="w-4 h-4"></i><span>Categorias</span>
             </a>

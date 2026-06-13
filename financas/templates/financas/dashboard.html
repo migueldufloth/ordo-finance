@@ -24,6 +24,11 @@
                 {% endfor %}
             </select>
         </form>
+        <a href="{% url 'gerar_relatorio' %}?mes={{ mes }}&ano={{ ano }}"
+            class="inline-flex items-center space-x-2 px-3 py-2 text-sm font-medium bg-white border border-neutral-200 text-neutral-600 hover:text-neutral-800 hover:bg-neutral-50 rounded-lg transition-colors duration-150">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            <span>Exportar PDF</span>
+        </a>
         <a href="{% url 'adicionar_transacao' %}"
             class="group inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors duration-150 shadow-sm">
             <i data-lucide="plus" class="w-4 h-4 group-hover:rotate-90 transition-transform duration-150"></i>
@@ -67,7 +72,7 @@
                 <div class="w-9 h-9 bg-gray-100 rounded-xl flex items-center justify-center">
                     <i data-lucide="wallet" class="w-5 h-5 text-dark-500"></i>
                 </div>
-                <span class="text-xs font-medium text-dark-400">Saldo total</span>
+                <span class="text-xs font-medium text-dark-400">Acumulado</span>
             </div>
             <p class="text-xs text-dark-500 mb-0.5">Saldo Acumulado</p>
             <p class="text-2xl font-bold {% if saldo_total >= 0 %}text-dark-800{% else %}text-red-600{% endif %}">R$ {{ saldo_total|floatformat:2 }}</p>
