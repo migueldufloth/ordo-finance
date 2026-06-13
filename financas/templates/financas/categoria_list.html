@@ -29,6 +29,7 @@
                             <span>Nome</span>
                         </div>
                     </th>
+                    <th class="px-5 py-3 text-xs font-medium text-left uppercase">Transações</th>
                     <th class="px-5 py-3 text-xs font-medium text-center uppercase w-28">Ações</th>
                 </tr>
             </thead>
@@ -42,6 +43,13 @@
                             </div>
                             <span class="font-medium text-dark-800 text-sm">{{ categoria.nome }}</span>
                         </div>
+                    </td>
+                    <td class="px-5 py-3">
+                        {% if categoria.total_transacoes %}
+                        <span class="bg-gray-100 text-gray-600 text-xs font-semibold px-2.5 py-0.5 rounded-full">{{ categoria.total_transacoes }}</span>
+                        {% else %}
+                        <span class="text-xs text-neutral-400">—</span>
+                        {% endif %}
                     </td>
                     <td class="px-5 py-3 text-center">
                         <div class="flex items-center justify-center space-x-1">

@@ -7,7 +7,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Sum
+from django.db.models import Count, Sum
 from django.http import HttpResponse
 from django.utils import timezone
 from django.urls import reverse_lazy
@@ -329,6 +329,13 @@ class CategoriaListView(BaseCategoriaView, ListView):
     template_name = "financas/categoria_list.html"
     paginate_by = 10
 
+    def get_queryset(self):
+        return (
+            super().get_queryset()
+            .annotate(total_transacoes=Count('transacao'))
+            .order_by('nome')
+        )
+
 class CategoriaCreateView(BaseCategoriaView, CreateView):
     form_class = CategoriaForm
     template_name = "financas/categoria_form.html"
@@ -420,17 +427,35 @@ class OrcamentoListView(BaseOrcamentoView, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         hoje = timezone.localdate()
+        try:
+            ano = int(self.request.GET.get('ano', hoje.year))
+            mes = int(self.request.GET.get('mes', hoje.month))
+            if not (1 <= mes <= 12):
+                mes = hoje.month
+        except (ValueError, TypeError):
+            ano, mes = hoje.year, hoje.month
+
         transacoes_mes = Transacao.objects.filter(
             usuario=self.request.user,
             tipo='DESPESA',
-            data__year=hoje.year,
-            data__month=hoje.month,
+            data__year=ano,
+            data__month=mes,
         )
         for o in context['object_list']:
             o.gasto_mes = transacoes_mes.filter(categoria=o.categoria).aggregate(
                 Sum('valor'))['valor__sum'] or decimal.Decimal('0')
             o.disponivel = max(o.valor_mensal - o.gasto_mes, decimal.Decimal('0'))
             o.percentual = min(int(o.gasto_mes / o.valor_mensal * 100), 100) if o.valor_mensal else 0
+
+        meses_lista = [
+            (1,'Janeiro'),(2,'Fevereiro'),(3,'Março'),(4,'Abril'),
+            (5,'Maio'),(6,'Junho'),(7,'Julho'),(8,'Agosto'),
+            (9,'Setembro'),(10,'Outubro'),(11,'Novembro'),(12,'Dezembro'),
+        ]
+        context['mes'] = mes
+        context['ano'] = ano
+        context['meses_lista'] = meses_lista
+        context['anos_lista'] = list(range(2023, hoje.year + 1))
         return context
 
 

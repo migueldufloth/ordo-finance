@@ -4,16 +4,32 @@
 
 <div x-data="{ show: false, url: '', name: '' }" class="h-full flex flex-col">
 
-<div class="flex-none flex justify-between items-center mb-4 animate-fade-in">
+<div class="flex-none flex flex-wrap justify-between items-center gap-3 mb-4 animate-fade-in">
     <div>
         <h1 class="text-xl font-bold text-dark-800">Orçamentos</h1>
         <p class="text-dark-500 text-sm">Defina limites mensais por categoria</p>
     </div>
-    <a href="{% url 'orcamento_create' %}"
-        class="group inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors duration-150 shadow-sm">
-        <i data-lucide="plus" class="w-4 h-4 group-hover:rotate-90 transition-transform duration-150"></i>
-        <span>Novo Orçamento</span>
-    </a>
+    <div class="flex items-center gap-2 flex-wrap">
+        <form method="get" x-data class="flex items-center gap-2">
+            <select name="mes" x-on:change="$el.closest('form').submit()"
+                class="px-2 py-1.5 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 bg-white">
+                {% for num, nome in meses_lista %}
+                <option value="{{ num }}" {% if num == mes %}selected{% endif %}>{{ nome }}</option>
+                {% endfor %}
+            </select>
+            <select name="ano" x-on:change="$el.closest('form').submit()"
+                class="px-2 py-1.5 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 bg-white">
+                {% for a in anos_lista %}
+                <option value="{{ a }}" {% if a == ano %}selected{% endif %}>{{ a }}</option>
+                {% endfor %}
+            </select>
+        </form>
+        <a href="{% url 'orcamento_create' %}"
+            class="group inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors duration-150 shadow-sm">
+            <i data-lucide="plus" class="w-4 h-4 group-hover:rotate-90 transition-transform duration-150"></i>
+            <span>Novo Orçamento</span>
+        </a>
+    </div>
 </div>
 
 {% if object_list %}

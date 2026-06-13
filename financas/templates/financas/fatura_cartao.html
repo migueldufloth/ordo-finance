@@ -12,11 +12,18 @@
             Transações de {{ mes_ref|date:"F/Y" }}
         </p>
     </div>
-    <a href="{% url 'cartao_credito_list' %}"
-       class="inline-flex items-center space-x-2 px-3 py-2 text-sm font-medium text-neutral-600 bg-white border border-neutral-200 hover:bg-neutral-50 rounded-lg transition-colors">
-        <i data-lucide="arrow-left" class="w-4 h-4"></i>
-        <span>Voltar</span>
-    </a>
+    <div class="flex items-center gap-2">
+        <a href="{% url 'gerar_relatorio' %}?cartao={{ cartao.pk }}&mes={{ mes_ref.month }}&ano={{ mes_ref.year }}"
+           class="inline-flex items-center space-x-2 px-3 py-2 text-sm font-medium text-neutral-600 bg-white border border-neutral-200 hover:bg-neutral-50 rounded-lg transition-colors">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            <span>Exportar PDF</span>
+        </a>
+        <a href="{% url 'cartao_credito_list' %}"
+           class="inline-flex items-center space-x-2 px-3 py-2 text-sm font-medium text-neutral-600 bg-white border border-neutral-200 hover:bg-neutral-50 rounded-lg transition-colors">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+            <span>Voltar</span>
+        </a>
+    </div>
 </div>
 
 <!-- Resumo da fatura -->
