@@ -305,6 +305,23 @@
     }
     .dark .login-input::placeholder { color: #636e7b !important; }
 
+    /* ── Inputs e selects genéricos (fora de .form-group) ── */
+    .dark input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]),
+    .dark select {
+        background-color: #1c2128 !important;
+        color: #e6edf3 !important;
+    }
+    .dark input::placeholder { color: #636e7b !important; }
+    /* Seta customizada para selects standalone em dark mode */
+    .dark select {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%238b949e' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e") !important;
+        background-position: right 10px center !important;
+        background-repeat: no-repeat !important;
+        background-size: 16px !important;
+        padding-right: 2.25rem !important;
+        appearance: none !important;
+    }
+
     /* ── Custom selects & datepicker (painéis dropdown) ── */
     .dark [x-show].absolute,
     .dark [x-show].z-30 {

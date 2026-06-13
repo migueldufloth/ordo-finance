@@ -50,7 +50,7 @@
             <div class="flex-1 min-w-[160px]">
                 <label class="block text-xs font-medium text-neutral-500 mb-1">Buscar</label>
                 <div class="relative">
-                    <i data-lucide="search" class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400 pointer-events-none"></i>
+                    <i data-lucide="search" class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-500 pointer-events-none"></i>
                     <input type="text" name="q" value="{{ filtros.q }}" placeholder="Descrição…"
                            class="w-full pl-8 pr-3 py-1.5 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300">
                 </div>
@@ -181,9 +181,7 @@
                             {{ transacao.categoria }}
                         </span>
                         {% else %}
-                        <span class="bg-gray-100 text-gray-400 text-xs font-semibold px-2.5 py-0.5 rounded-full">
-                            Sem categoria
-                        </span>
+                        <span class="text-neutral-400 text-xs">—</span>
                         {% endif %}
                     </td>
                     <td class="px-5 py-3 whitespace-nowrap text-right">
