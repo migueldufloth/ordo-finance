@@ -47,7 +47,7 @@ services:
       - SENTRY_DSN=${SENTRY_DSN:-}
       - REPORTS_API_URL=http://api:8000
     ports:
-      - "8000:8000"
+      - "127.0.0.1:9000:8000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/"]
       interval: 30s
