@@ -5,8 +5,12 @@ from decimal import Decimal
 
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
+from django.utils import timezone
 
-from financas.models import CartaoCredito, Categoria, Transacao
+from financas.models import (
+    CartaoCredito, Categoria, FaturaCartao, Orcamento,
+    Transacao, TransacaoRecorrente,
+)
 
 
 class Command(BaseCommand):
@@ -27,6 +31,9 @@ class Command(BaseCommand):
 
         if options["limpar"]:
             Transacao.objects.filter(usuario=usuario).delete()
+            TransacaoRecorrente.objects.filter(usuario=usuario).delete()
+            Orcamento.objects.filter(usuario=usuario).delete()
+            FaturaCartao.objects.filter(usuario=usuario).delete()
             CartaoCredito.objects.filter(usuario=usuario).delete()
             Categoria.objects.filter(usuario=usuario).delete()
             self.stdout.write(self.style.WARNING(f'Dados de "{usuario.username}" removidos.'))
@@ -36,6 +43,9 @@ class Command(BaseCommand):
         cats = self._criar_categorias(usuario)
         cartoes = self._criar_cartoes(usuario)
         total = self._criar_transacoes(usuario, cats, cartoes)
+        self._criar_orcamentos(usuario, cats)
+        self._criar_recorrentes(usuario, cats, cartoes)
+        self._criar_faturas(usuario, cartoes)
 
         self.stdout.write(self.style.SUCCESS(f"\nOK — {total} transacoes inseridas."))
 
@@ -84,6 +94,139 @@ class Command(BaseCommand):
         self.stdout.write(f"  {len(cartoes)} cartões criados")
         return cartoes
 
+    def _criar_orcamentos(self, usuario, cats):
+        limites = [
+            ("Alimentação",      Decimal("600.00")),
+            ("Restaurantes",     Decimal("400.00")),
+            ("Transporte",       Decimal("500.00")),
+            ("Saúde",            Decimal("700.00")),
+            ("Lazer",            Decimal("300.00")),
+            ("Serviços Digitais", Decimal("200.00")),
+            ("Vestuário",        Decimal("350.00")),
+            ("Farmácia",         Decimal("150.00")),
+        ]
+        criados = 0
+        for nome, valor in limites:
+            if nome in cats:
+                _, created = Orcamento.objects.get_or_create(
+                    usuario=usuario,
+                    categoria=cats[nome],
+                    defaults={"valor_mensal": valor},
+                )
+                if created:
+                    criados += 1
+        self.stdout.write(f"  {criados} orçamentos criados")
+
+    def _criar_recorrentes(self, usuario, cats, cartoes):
+        nubank = cartoes["Nubank"]
+        inter = cartoes["Inter"]
+        hoje = timezone.localdate()
+        prox_mes = hoje.replace(day=1)
+        if prox_mes.month == 12:
+            prox_mes = prox_mes.replace(year=prox_mes.year + 1, month=1)
+        else:
+            prox_mes = prox_mes.replace(month=prox_mes.month + 1)
+
+        recorrentes = [
+            {
+                "tipo": "RECEITA", "descricao": "Salário",
+                "valor": Decimal("6800.00"), "categoria": cats["Salário"],
+                "cartao_credito": None, "frequencia": "MENSAL",
+                "proxima_ocorrencia": prox_mes.replace(day=5), "ativa": True,
+            },
+            {
+                "tipo": "DESPESA", "descricao": "Aluguel",
+                "valor": Decimal("1400.00"), "categoria": cats["Moradia"],
+                "cartao_credito": None, "frequencia": "MENSAL",
+                "proxima_ocorrencia": prox_mes.replace(day=1), "ativa": True,
+            },
+            {
+                "tipo": "DESPESA", "descricao": "Condomínio",
+                "valor": Decimal("350.00"), "categoria": cats["Moradia"],
+                "cartao_credito": None, "frequencia": "MENSAL",
+                "proxima_ocorrencia": prox_mes.replace(day=2), "ativa": True,
+            },
+            {
+                "tipo": "DESPESA", "descricao": "Plano de saúde",
+                "valor": Decimal("289.00"), "categoria": cats["Saúde"],
+                "cartao_credito": None, "frequencia": "MENSAL",
+                "proxima_ocorrencia": prox_mes.replace(day=10), "ativa": True,
+            },
+            {
+                "tipo": "DESPESA", "descricao": "Academia SmartFit",
+                "valor": Decimal("109.90"), "categoria": cats["Saúde"],
+                "cartao_credito": inter, "frequencia": "MENSAL",
+                "proxima_ocorrencia": prox_mes.replace(day=5), "ativa": True,
+            },
+            {
+                "tipo": "DESPESA", "descricao": "Netflix",
+                "valor": Decimal("45.90"), "categoria": cats["Serviços Digitais"],
+                "cartao_credito": nubank, "frequencia": "MENSAL",
+                "proxima_ocorrencia": prox_mes.replace(day=12), "ativa": True,
+            },
+            {
+                "tipo": "DESPESA", "descricao": "Spotify",
+                "valor": Decimal("21.90"), "categoria": cats["Serviços Digitais"],
+                "cartao_credito": nubank, "frequencia": "MENSAL",
+                "proxima_ocorrencia": prox_mes.replace(day=8), "ativa": True,
+            },
+            {
+                "tipo": "DESPESA", "descricao": "Internet fibra",
+                "valor": Decimal("120.00"), "categoria": cats["Serviços Digitais"],
+                "cartao_credito": None, "frequencia": "MENSAL",
+                "proxima_ocorrencia": prox_mes.replace(day=15), "ativa": True,
+            },
+            {
+                "tipo": "DESPESA", "descricao": "Mensalidade faculdade",
+                "valor": Decimal("890.00"), "categoria": cats["Educação"],
+                "cartao_credito": None, "frequencia": "MENSAL",
+                "proxima_ocorrencia": prox_mes.replace(day=20), "ativa": True,
+            },
+            {
+                "tipo": "RECEITA", "descricao": "Dividendos / rendimentos",
+                "valor": Decimal("210.00"), "categoria": cats["Investimentos"],
+                "cartao_credito": None, "frequencia": "MENSAL",
+                "proxima_ocorrencia": prox_mes.replace(day=20), "ativa": True,
+            },
+        ]
+
+        criados = 0
+        for dados in recorrentes:
+            _, created = TransacaoRecorrente.objects.get_or_create(
+                usuario=usuario,
+                descricao=dados["descricao"],
+                defaults=dados,
+            )
+            if created:
+                criados += 1
+        self.stdout.write(f"  {criados} transações recorrentes criadas")
+
+    def _criar_faturas(self, usuario, cartoes):
+        hoje = timezone.localdate()
+        criadas = 0
+        for cartao in cartoes.values():
+            for offset in range(3, -1, -1):
+                mes = hoje.month - offset
+                ano = hoje.year
+                while mes <= 0:
+                    mes += 12
+                    ano -= 1
+                mes_ref = date(ano, mes, 1)
+                paga = offset > 0
+                data_pagamento = date(ano, mes, cartao.dia_vencimento) if paga else None
+                _, created = FaturaCartao.objects.get_or_create(
+                    cartao_credito=cartao,
+                    mes_referencia=mes_ref,
+                    defaults={
+                        "usuario": usuario,
+                        "paga": paga,
+                        "data_pagamento": data_pagamento,
+                    },
+                )
+                if created:
+                    criadas += 1
+        self.stdout.write(f"  {criadas} faturas criadas")
+
     def _criar_transacoes(self, usuario, cats, cartoes):
         today = date.today()
         nubank, inter, c6 = cartoes["Nubank"], cartoes["Inter"], cartoes["C6 Bank"]
@@ -97,7 +240,6 @@ class Command(BaseCommand):
                 ano -= 1
 
             ultimo_dia = monthrange(ano, mes)[1]
-            is_mes_atual = (ano == today.year and mes == today.month)
 
             def d(dia):
                 dia = min(dia, ultimo_dia)
@@ -166,23 +308,25 @@ class Command(BaseCommand):
                 self._t(usuario, dt, "DESPESA", "Internet fibra", "120.00", cats["Serviços Digitais"])
                 total += 1
 
+            dt = d(20)
+            if dt:
+                self._t(usuario, dt, "DESPESA", "Mensalidade faculdade", "890.00", cats["Educação"])
+                total += 1
+
             # ── DESPESAS VARIÁVEIS ────────────────────────────────────────────
 
-            # Conta de luz
             dt = d(random.randint(10, 20))
             if dt:
                 val = f"{random.randint(95, 210)}.{random.choice(['00', '43', '78'])}"
                 self._t(usuario, dt, "DESPESA", "Conta de luz", val, cats["Moradia"])
                 total += 1
 
-            # Água
             dt = d(random.randint(5, 15))
             if dt:
                 val = f"{random.randint(55, 95)}.{random.choice(['00', '20', '60'])}"
                 self._t(usuario, dt, "DESPESA", "Conta de água", val, cats["Moradia"])
                 total += 1
 
-            # Combustível (2-3x)
             postos = ["Posto Shell", "Posto Petrobras", "Posto Ipiranga", "Auto Posto Central"]
             for _ in range(random.randint(2, 3)):
                 dt = d(random.randint(1, ultimo_dia))
@@ -191,7 +335,6 @@ class Command(BaseCommand):
                     self._t(usuario, dt, "DESPESA", random.choice(postos), val, cats["Transporte"])
                     total += 1
 
-            # Supermercado (2-3x)
             mercados = ["Carrefour", "Pão de Açúcar", "Extra", "Mercadinho do bairro", "Atacadão"]
             for _ in range(random.randint(2, 3)):
                 dt = d(random.randint(1, ultimo_dia))
@@ -201,7 +344,6 @@ class Command(BaseCommand):
                     self._t(usuario, dt, "DESPESA", random.choice(mercados), val, cats["Alimentação"], cartao, pago(offset))
                     total += 1
 
-            # Restaurantes / delivery (4-7x)
             restaurantes = [
                 "iFood — Burger King", "Sushi Hana", "Restaurante Família", "McDonald's",
                 "Pizza Hut", "Outback Steakhouse", "iFood — Pizza", "Padaria & Café",
@@ -215,7 +357,6 @@ class Command(BaseCommand):
                     self._t(usuario, dt, "DESPESA", random.choice(restaurantes), val, cats["Restaurantes"], cartao, pago(offset))
                     total += 1
 
-            # Transporte urbano (2-5x)
             for _ in range(random.randint(2, 5)):
                 dt = d(random.randint(1, ultimo_dia))
                 if dt:
@@ -223,7 +364,6 @@ class Command(BaseCommand):
                     self._t(usuario, dt, "DESPESA", random.choice(["Uber", "99 Táxi", "Metrô", "Ônibus"]), val, cats["Transporte"])
                     total += 1
 
-            # Farmácia (0-2x)
             for _ in range(random.randint(0, 2)):
                 dt = d(random.randint(1, ultimo_dia))
                 if dt:
@@ -231,7 +371,6 @@ class Command(BaseCommand):
                     self._t(usuario, dt, "DESPESA", random.choice(["Drogasil", "Droga Raia", "Ultrafarma", "Farmácia Popular"]), val, cats["Farmácia"])
                     total += 1
 
-            # Vestuário (40% chance)
             if random.random() < 0.4:
                 dt = d(random.randint(1, ultimo_dia))
                 if dt:
@@ -240,7 +379,6 @@ class Command(BaseCommand):
                     self._t(usuario, dt, "DESPESA", random.choice(["Renner", "Zara", "C&A", "H&M", "Hering", "Adidas Store"]), val, cats["Vestuário"], cartao, pago(offset))
                     total += 1
 
-            # Lazer (0-2x)
             for _ in range(random.randint(0, 2)):
                 dt = d(random.randint(1, ultimo_dia))
                 if dt:
@@ -249,7 +387,6 @@ class Command(BaseCommand):
                     self._t(usuario, dt, "DESPESA", random.choice(["Cinema", "Show", "Parque", "Boliche", "Escape Room", "Balada"]), val, cats["Lazer"], cartao, pago(offset))
                     total += 1
 
-            # Pets (35% chance)
             if random.random() < 0.35:
                 dt = d(random.randint(1, ultimo_dia))
                 if dt:
@@ -257,7 +394,6 @@ class Command(BaseCommand):
                     self._t(usuario, dt, "DESPESA", random.choice(["Ração Royal Canin", "Petshop — banho", "Vet Clínica", "Petlove"]), val, cats["Pets"])
                     total += 1
 
-            # Saúde pontual (30% chance)
             if random.random() < 0.3:
                 dt = d(random.randint(1, ultimo_dia))
                 if dt:
@@ -265,7 +401,6 @@ class Command(BaseCommand):
                     self._t(usuario, dt, "DESPESA", random.choice(["Consulta médica", "Dentista", "Psicólogo", "Oftalmologista"]), val, cats["Saúde"])
                     total += 1
 
-            # Educação (25% chance)
             if random.random() < 0.25:
                 dt = d(random.randint(1, ultimo_dia))
                 if dt:
