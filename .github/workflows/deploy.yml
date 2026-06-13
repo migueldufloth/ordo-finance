@@ -52,7 +52,7 @@ jobs:
 
     steps:
       - name: Atualizar código e reconstruir containers
-        working-directory: /home/ubuntu/ordo-finance
+        working-directory: /home/migueldufloth/ordo-finance
         run: |
           git fetch origin main
           git reset --hard origin/main
