@@ -11,6 +11,7 @@
         <p class="text-dark-500 text-sm">Defina limites mensais por categoria</p>
     </div>
     <div class="flex items-center gap-2 flex-wrap">
+        {% if object_list %}
         <form method="get" x-data class="flex items-center gap-2">
             <select name="mes" x-on:change="$el.closest('form').submit()"
                 class="px-2 py-1.5 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 bg-white">
@@ -25,6 +26,7 @@
                 {% endfor %}
             </select>
         </form>
+        {% endif %}
         <a href="{% url 'orcamento_create' %}"
             class="group inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors duration-150 shadow-sm">
             <i data-lucide="plus" class="w-4 h-4 group-hover:rotate-90 transition-transform duration-150"></i>

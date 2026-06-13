@@ -7,7 +7,7 @@
 <div class="flex flex-wrap justify-between items-center gap-3 mb-4 animate-fade-in">
     <div>
         <h1 class="text-xl font-bold text-dark-800">Olá, {{ user.username }}</h1>
-        <p class="text-dark-500 text-sm">Resumo financeiro</p>
+        <p class="text-dark-500 text-sm">{% for n, nome in meses_lista %}{% if n == mes %}{{ nome }} {{ ano }}{% endif %}{% endfor %}</p>
     </div>
     <div class="flex items-center gap-2 flex-wrap">
         <!-- Seletor de período -->
@@ -47,7 +47,6 @@
                 <div class="w-9 h-9 bg-green-100 rounded-xl flex items-center justify-center">
                     <i data-lucide="trending-up" class="w-5 h-5 text-green-600"></i>
                 </div>
-                <span class="text-xs font-medium text-dark-400">Este período</span>
             </div>
             <p class="text-xs text-dark-500 mb-0.5">Receitas</p>
             <p class="text-2xl font-bold text-dark-800">R$ {{ receitas_mes|brl }}</p>
@@ -60,7 +59,6 @@
                 <div class="w-9 h-9 bg-red-100 rounded-xl flex items-center justify-center">
                     <i data-lucide="trending-down" class="w-5 h-5 text-red-600"></i>
                 </div>
-                <span class="text-xs font-medium text-dark-400">Este período</span>
             </div>
             <p class="text-xs text-dark-500 mb-0.5">Despesas</p>
             <p class="text-2xl font-bold text-dark-800">R$ {{ despesas_mes|brl }}</p>
@@ -127,7 +125,7 @@
         </a>
     </div>
     <div class="px-5 py-3 space-y-3">
-        {% for o in orcamentos %}
+        {% for o in orcamentos|slice:":5" %}
         <div>
             <div class="flex justify-between items-center mb-1">
                 <span class="text-sm font-medium text-dark-700">{{ o.categoria.nome }}</span>
@@ -144,6 +142,13 @@
         </div>
         {% endfor %}
     </div>
+    {% if orcamentos|length > 5 %}
+    <div class="px-5 py-2 border-t border-gray-100 text-center">
+        <a href="{% url 'orcamento_list' %}" class="text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors">
+            Ver todos os {{ orcamentos|length }} orçamentos →
+        </a>
+    </div>
+    {% endif %}
 </div>
 {% endif %}
 
@@ -162,7 +167,7 @@
         </a>
     </div>
     <div class="px-5 py-3 space-y-3">
-        {% for c in cartoes %}
+        {% for c in cartoes|slice:":4" %}
         <div class="flex items-center gap-3">
             <a href="{% url 'fatura_cartao' c.pk %}" class="text-sm font-medium text-dark-700 hover:text-primary-600 transition-colors w-32 truncate">{{ c.nome }}</a>
             <div class="flex-1 bg-gray-100 rounded-full h-2">
@@ -170,12 +175,19 @@
                     {% if c.percentual_limite >= 90 %}bg-red-500{% elif c.percentual_limite >= 70 %}bg-amber-400{% else %}bg-green-500{% endif %}"
                     style="width: {{ c.percentual_limite }}%"></div>
             </div>
-            <span class="text-xs font-semibold text-neutral-500 w-24 text-right">
-                R$ {{ c.gasto_mes|brl }} / {{ c.limite|brl }}
+            <span class="text-xs font-semibold text-neutral-500 w-28 text-right">
+                R$ {{ c.gasto_mes|brl }} / R$ {{ c.limite|brl }}
             </span>
         </div>
         {% endfor %}
     </div>
+    {% if cartoes|length > 4 %}
+    <div class="px-5 py-2 border-t border-gray-100 text-center">
+        <a href="{% url 'cartao_credito_list' %}" class="text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors">
+            Ver todos os {{ cartoes|length }} cartões →
+        </a>
+    </div>
+    {% endif %}
 </div>
 {% endif %}
 
