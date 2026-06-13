@@ -1,10 +1,10 @@
 # Ordo Finance
 
-Sistema de gestão financeira pessoal com arquitetura híbrida: monolito Django para o core da aplicação e microserviço FastAPI para relatórios. Totalmente containerizado via Docker e implantado na Oracle Cloud Always Free.
+Sistema de gestão financeira pessoal construído com Django. Totalmente containerizado via Docker e implantado na Oracle Cloud Always Free.
 
 ## Visão Geral
 
-A aplicação permite controle de receitas e despesas, categorização de lançamentos, gerenciamento de cartões de crédito, orçamentos mensais por categoria, transações recorrentes e faturas de cartão. O projeto demonstra a coexistência de um monolito robusto (Django + Gunicorn) com um microserviço especializado (FastAPI + Uvicorn), utilizando conteinerização Docker para orquestração dos ambientes de desenvolvimento e produção.
+A aplicação permite controle de receitas e despesas, categorização de lançamentos, gerenciamento de cartões de crédito, orçamentos mensais por categoria, transações recorrentes e faturas de cartão. Toda a geração de PDF é feita diretamente no Django via fpdf2.
 
 ---
 
@@ -32,12 +32,6 @@ Estrutura interna do monolito Django, mapeando os arquivos reais do repositório
 
 ![C4 Nível 3 — Componentes Django](docs/diagramas/png/c3_componentes_django.png)
 
-### Nível 3: Componentes — Microserviço FastAPI
-
-Estrutura interna do microserviço de geração de PDFs.
-
-![C4 Nível 3 — Componentes FastAPI](docs/diagramas/png/c3_componentes_fastapi.png)
-
 ---
 
 ### Modelo de Dados
@@ -52,8 +46,6 @@ Entidades, atributos tipados, enums e regras de integridade referencial.
 
 ## Rotas da Aplicação
 
-### Django (porta 8000)
-
 | Método | URL | Nome | Descrição |
 |--------|-----|------|-----------|
 | GET | `/` | `home` | Dashboard com saldo, resumo mensal e últimos lançamentos |
@@ -63,7 +55,7 @@ Entidades, atributos tipados, enums e regras de integridade referencial.
 | GET/POST | `/transacoes/adicionar/` | `adicionar_transacao` | Formulário de nova transação |
 | GET/POST | `/transacoes/<pk>/editar/` | `editar_transacao` | Editar transação existente |
 | GET/POST | `/transacoes/<pk>/remover/` | `remover_transacao` | Confirmar e remover transação |
-| POST | `/transacoes/relatorio/` | `gerar_relatorio` | Gera relatório PDF via microserviço FastAPI |
+| POST | `/transacoes/relatorio/` | `gerar_relatorio` | Gera relatório PDF via fpdf2 e retorna download |
 | GET | `/transacoes/exportar-csv/` | `exportar_csv` | Exporta transações filtradas em CSV |
 | GET | `/transacoes/cartoes/` | `cartao_credito_list` | Lista de cartões de crédito |
 | GET/POST | `/transacoes/cartoes/adicionar/` | `cartao_credito_create` | Novo cartão de crédito |
@@ -86,14 +78,6 @@ Entidades, atributos tipados, enums e regras de integridade referencial.
 | GET | `/health/` | `health` | Health check da aplicação e do banco de dados |
 | GET | `/admin/` | — | Django Admin |
 
-### FastAPI (porta 8001)
-
-| Método | URL | Descrição |
-|--------|-----|-----------|
-| GET | `/` | Status do serviço |
-| GET | `/health` | Health check do microserviço |
-| POST | `/relatorio/pdf` | Gera relatório PDF a partir de lista de transações |
-
 ---
 
 ## Requisitos Funcionais
@@ -104,10 +88,10 @@ Entidades, atributos tipados, enums e regras de integridade referencial.
 | RF02 | CRUD de transações com data, descrição, valor, categoria e cartão opcional |
 | RF03 | Gerenciamento de cartões de crédito (nome, limite, fechamento, vencimento, cor) |
 | RF04 | Categorização personalizada de transações por usuário |
-| RF05 | Dashboard com saldo total, resumo mensal e últimos 5 lançamentos |
+| RF05 | Dashboard com saldo total, resumo mensal, gráficos e últimos 5 lançamentos |
 | RF06 | Histórico completo de transações com paginação (10 itens/página) |
 | RF07 | Isolamento total de dados por usuário |
-| RF08 | Exportação de relatórios em PDF via microserviço FastAPI |
+| RF08 | Exportação de relatório em PDF gerado diretamente no Django via fpdf2 |
 | RF09 | Orçamentos mensais por categoria com acompanhamento de gasto e percentual |
 | RF10 | Transações recorrentes com frequência configurável (mensal, quinzenal, semanal, anual) |
 | RF11 | Faturas de cartão de crédito por mês com controle de pagamento |
@@ -117,14 +101,13 @@ Entidades, atributos tipados, enums e regras de integridade referencial.
 
 | ID | Requisito |
 |----|-----------|
-| RNF01 | Arquitetura híbrida: Django monolito + FastAPI microserviço |
-| RNF02 | Python 3.12+ · Django 5.x · FastAPI |
-| RNF03 | Frontend SSR: Django Templates + TailwindCSS + Alpine.js |
-| RNF04 | Todas as rotas protegidas por autenticação obrigatória |
-| RNF05 | Integridade referencial: PROTECT para categorias, CASCADE para cartões |
-| RNF06 | Infraestrutura containerizada via Docker Compose |
-| RNF07 | Pipeline CI/CD automatizado via GitHub Actions com self-hosted runner |
-| RNF08 | Observabilidade com rastreamento de erros (Sentry) e monitoramento de uptime (Better Stack) |
+| RNF01 | Python 3.12+ · Django 5.x |
+| RNF02 | Frontend SSR: Django Templates + TailwindCSS + Alpine.js |
+| RNF03 | Todas as rotas protegidas por autenticação obrigatória |
+| RNF04 | Integridade referencial: PROTECT para categorias, CASCADE para cartões |
+| RNF05 | Infraestrutura containerizada via Docker Compose |
+| RNF06 | Pipeline CI/CD automatizado via GitHub Actions com self-hosted runner |
+| RNF07 | Observabilidade com rastreamento de erros (Sentry) e monitoramento de uptime (Better Stack) |
 
 ---
 
@@ -132,9 +115,9 @@ Entidades, atributos tipados, enums e regras de integridade referencial.
 
 | Camada | Tecnologias |
 |--------|------------|
-| Backend | Python 3.12 · Django 5.x · FastAPI |
-| Servidores | Gunicorn (Django) · Uvicorn (FastAPI) · WhiteNoise + Brotli (assets) |
-| Frontend | Django Templates · TailwindCSS · Alpine.js · Lucide Icons |
+| Backend | Python 3.12 · Django 5.x · fpdf2 |
+| Servidores | Gunicorn · WhiteNoise + Brotli (assets) |
+| Frontend | Django Templates · TailwindCSS · Alpine.js · Chart.js · Lucide Icons |
 | Banco de Dados | PostgreSQL 15 · psycopg2 · dj-database-url |
 | Infraestrutura | Docker · Docker Compose · Oracle Cloud Always Free |
 | CI/CD | GitHub Actions · Self-hosted Runner |
@@ -155,7 +138,6 @@ O projeto usa um arquivo `.env` na raiz. Abaixo todas as variáveis suportadas:
 | `POSTGRES_DB` | Sim (Docker) | `ordo` | Nome do banco (usado pelo container PostgreSQL) |
 | `POSTGRES_USER` | Sim (Docker) | `postgres` | Usuário do banco |
 | `POSTGRES_PASSWORD` | Sim (Docker) | — | Senha do banco |
-| `REPORTS_API_URL` | — | `http://api:8000` | URL base do microserviço FastAPI |
 | `SENTRY_DSN` | — | desativado | DSN do Sentry para rastreamento de erros em produção |
 
 > Em produção, `DATABASE_URL` é montado automaticamente pelo `docker-compose.prod.yml` a partir das variáveis `POSTGRES_*`. `SENTRY_DSN` é opcional — o Sentry só inicializa se a variável estiver definida.
@@ -178,12 +160,12 @@ git push origin main
        ▼
   Job: deploy (self-hosted — VM Oracle Cloud)
   ├── git pull origin main
-  ├── docker compose -f docker-compose.prod.yml up -d --build
+  ├── docker compose -f docker-compose.prod.yml build web
+  ├── docker compose -f docker-compose.prod.yml up -d
   └── manage.py migrate --noinput
 ```
 
 O runner roda como serviço `systemd` na VM, conectando-se ao GitHub via HTTPS de saída — sem portas abertas para automação.
-
 
 ---
 
@@ -204,18 +186,15 @@ O endpoint `/health/` retorna `{"status": "ok", "database": "ok"}` (HTTP 200) qu
 ordo-finance/
 ├── .github/workflows/
 │   └── deploy.yml              # Pipeline CI/CD (testes + deploy automático)
-├── api/                        # Microserviço FastAPI (relatórios PDF)
-│   ├── main.py                 # Endpoints FastAPI
-│   ├── requirements.txt
-│   └── Dockerfile
 ├── financas/                   # App Django principal
 │   ├── models.py               # Transacao, CartaoCredito, Categoria, Orcamento, FaturaCartao, TransacaoRecorrente
 │   ├── views.py                # FBVs + CBVs
 │   ├── forms.py                # TransacaoForm, CartaoCreditoForm, CategoriaForm, OrcamentoForm, TransacaoRecorrenteForm
 │   ├── urls.py                 # Rotas do app
+│   ├── tests.py                # Testes de validators, autenticação e isolamento de dados
 │   └── templates/financas/     # Templates HTML
 ├── ordo_project/
-│   ├── settings.py             # Configurações (dj-database-url, WhiteNoise)
+│   ├── settings.py             # Configurações (dj-database-url, WhiteNoise, Sentry)
 │   ├── urls.py                 # Roteador raiz
 │   └── wsgi.py
 ├── docker-compose.yml          # Ambiente de desenvolvimento local
@@ -235,10 +214,6 @@ O workflow [Generate Diagrams](.github/workflows/generate-diagrams.yml) regenera
 ### Diagrama de Classes — Views, Forms e Mixins
 
 ![Classes — Views](docs/diagramas/png/uml_classes_views.png)
-
-### Diagrama de Classes — Schemas FastAPI
-
-![Classes — FastAPI](docs/diagramas/png/uml_classes_fastapi.png)
 
 ### Sequência — Autenticação (Login)
 

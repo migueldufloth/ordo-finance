@@ -3,7 +3,7 @@
 !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
 
 Person(usuarioFinal, "Usuário", "Pessoa física que controla receitas, despesas e\ncartões de crédito pelo navegador.")
-System(ordoFinance, "Ordo Finance", "Aplicação web de gestão financeira pessoal.\nMonolito Django + Microserviço FastAPI.\nHospedado na Oracle Cloud via Docker Compose.")
+System(ordoFinance, "Ordo Finance", "Aplicação web de gestão financeira pessoal.\nMonolito Django hospedado na Oracle Cloud via Docker Compose.")
 System_Ext(sentry, "Sentry", "Rastreamento de erros em produção.\nCaptura exceções com stacktrace completo.")
 System_Ext(betterStack, "Better Stack", "Monitoramento externo de uptime.\nFaz polling HTTP em /health/ periodicamente.")
 System_Ext(githubActions, "GitHub Actions", "Pipeline CI/CD. Executa testes automatizados\ne deploy na Oracle Cloud via self-hosted runner.")
