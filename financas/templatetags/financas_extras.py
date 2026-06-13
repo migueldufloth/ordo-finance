@@ -21,3 +21,12 @@ def dias_para(data):
     if not data:
         return None
     return (data - date.today()).days
+
+
+@register.filter
+def brl(value):
+    """Formata um número como moeda brasileira: 1.234,56"""
+    try:
+        return f'{float(value):,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
+    except (ValueError, TypeError):
+        return '0,00'

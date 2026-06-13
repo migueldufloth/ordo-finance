@@ -17,6 +17,12 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import Transacao, CartaoCredito, Categoria, Orcamento, FaturaCartao, TransacaoRecorrente
 from .forms import TransacaoForm, CartaoCreditoForm, CategoriaForm, OrcamentoForm, TransacaoRecorrenteForm
 
+MESES = [
+    (1,'Janeiro'),(2,'Fevereiro'),(3,'Março'),(4,'Abril'),
+    (5,'Maio'),(6,'Junho'),(7,'Julho'),(8,'Agosto'),
+    (9,'Setembro'),(10,'Outubro'),(11,'Novembro'),(12,'Dezembro'),
+]
+
 
 @login_required
 def dashboard(request):
@@ -96,13 +102,14 @@ def dashboard(request):
         cursor = cursor + relativedelta(months=1)
     chart_saldo = json.dumps({'labels': labels_6m, 'saldo': saldo_acumulado})
 
-    # Orçamentos com gasto do mês selecionado
+    # Orçamentos com gasto do mês selecionado — mais críticos primeiro
     orcamentos = list(Orcamento.objects.filter(usuario=usuario).select_related('categoria'))
     for o in orcamentos:
         o.gasto_mes = transacoes_mes.filter(
             tipo='DESPESA', categoria=o.categoria).aggregate(Sum('valor'))['valor__sum'] or decimal.Decimal('0')
         o.disponivel = max(o.valor_mensal - o.gasto_mes, decimal.Decimal('0'))
         o.percentual = min(int(o.gasto_mes / o.valor_mensal * 100), 100) if o.valor_mensal else 0
+    orcamentos.sort(key=lambda o: o.percentual, reverse=True)
 
     # Cartões com uso do limite no mês selecionado
     cartoes = list(CartaoCredito.objects.filter(usuario=usuario))
@@ -111,11 +118,6 @@ def dashboard(request):
             tipo='DESPESA', cartao_credito=c).aggregate(Sum('valor'))['valor__sum'] or decimal.Decimal('0')
         c.percentual_limite = min(int(c.gasto_mes / c.limite * 100), 100) if c.limite else 0
 
-    meses_lista = [
-        (1,'Janeiro'),(2,'Fevereiro'),(3,'Março'),(4,'Abril'),
-        (5,'Maio'),(6,'Junho'),(7,'Julho'),(8,'Agosto'),
-        (9,'Setembro'),(10,'Outubro'),(11,'Novembro'),(12,'Dezembro'),
-    ]
     anos_lista = list(range(2023, hoje.year + 1))
 
     return render(request, 'financas/dashboard.html', {
@@ -125,7 +127,7 @@ def dashboard(request):
         'ultimos_lancamentos': transacoes.order_by('-data')[:5],
         'ano': ano,
         'mes': mes,
-        'meses_lista': meses_lista,
+        'meses_lista': MESES,
         'anos_lista': anos_lista,
         'chart_categorias': chart_categorias,
         'chart_evolucao': chart_evolucao,
@@ -177,18 +179,13 @@ def lista_transacoes(request):
     cartoes = CartaoCredito.objects.filter(usuario=request.user)
     hoje = timezone.localdate()
     anos = list(range(2023, hoje.year + 1))
-    meses = [
-        (1,'Janeiro'),(2,'Fevereiro'),(3,'Março'),(4,'Abril'),
-        (5,'Maio'),(6,'Junho'),(7,'Julho'),(8,'Agosto'),
-        (9,'Setembro'),(10,'Outubro'),(11,'Novembro'),(12,'Dezembro'),
-    ]
 
     return render(request, "financas/lista_transacoes.html", {
         'page_obj': page_obj,
         'categorias': categorias,
         'cartoes': cartoes,
         'anos': anos,
-        'meses': meses,
+        'meses': MESES,
         'filtros': request.GET,
     })
 
@@ -447,14 +444,9 @@ class OrcamentoListView(BaseOrcamentoView, ListView):
             o.disponivel = max(o.valor_mensal - o.gasto_mes, decimal.Decimal('0'))
             o.percentual = min(int(o.gasto_mes / o.valor_mensal * 100), 100) if o.valor_mensal else 0
 
-        meses_lista = [
-            (1,'Janeiro'),(2,'Fevereiro'),(3,'Março'),(4,'Abril'),
-            (5,'Maio'),(6,'Junho'),(7,'Julho'),(8,'Agosto'),
-            (9,'Setembro'),(10,'Outubro'),(11,'Novembro'),(12,'Dezembro'),
-        ]
         context['mes'] = mes
         context['ano'] = ano
-        context['meses_lista'] = meses_lista
+        context['meses_lista'] = MESES
         context['anos_lista'] = list(range(2023, hoje.year + 1))
         return context
 

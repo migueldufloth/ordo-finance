@@ -80,7 +80,7 @@
                     </td>
                     <td class="px-5 py-3 text-right whitespace-nowrap">
                         <span class="text-sm font-bold {% if rec.tipo == 'RECEITA' %}text-green-600{% else %}text-red-600{% endif %}">
-                            R$ {{ rec.valor|floatformat:2 }}
+                            R$ {{ rec.valor|brl }}
                         </span>
                     </td>
                     <td class="px-5 py-3 text-center">

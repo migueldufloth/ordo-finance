@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load financas_extras %}
 {% block title %}Orçamentos - Ordo Finance{% endblock %}
 {% block content %}
 
@@ -58,16 +59,16 @@
                         </div>
                     </td>
                     <td class="px-5 py-4 text-right">
-                        <span class="text-sm font-semibold text-dark-800">R$ {{ orcamento.valor_mensal|floatformat:2 }}</span>
+                        <span class="text-sm font-semibold text-dark-800">R$ {{ orcamento.valor_mensal|brl }}</span>
                     </td>
                     <td class="px-5 py-4 text-right">
                         <span class="text-sm font-semibold {% if orcamento.percentual >= 90 %}text-red-600{% elif orcamento.percentual >= 70 %}text-amber-600{% else %}text-dark-800{% endif %}">
-                            R$ {{ orcamento.gasto_mes|floatformat:2 }}
+                            R$ {{ orcamento.gasto_mes|brl }}
                         </span>
                     </td>
                     <td class="px-5 py-4 text-right">
                         <span class="text-sm font-semibold {% if orcamento.disponivel == 0 %}text-red-600{% else %}text-green-600{% endif %}">
-                            R$ {{ orcamento.disponivel|floatformat:2 }}
+                            R$ {{ orcamento.disponivel|brl }}
                         </span>
                     </td>
                     <td class="px-5 py-4 min-w-[140px]">

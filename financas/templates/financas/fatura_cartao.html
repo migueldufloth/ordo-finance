@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load financas_extras %}
 {% block title %}Fatura {{ cartao.nome }} - Ordo Finance{% endblock %}
 {% block content %}
 
@@ -31,8 +32,8 @@
     <!-- Total da fatura -->
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
         <p class="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-1">Total da Fatura</p>
-        <p class="text-2xl font-bold text-dark-800">R$ {{ total|floatformat:2 }}</p>
-        <p class="text-xs text-neutral-400 mt-1">de R$ {{ cartao.limite|floatformat:2 }} de limite</p>
+        <p class="text-2xl font-bold text-dark-800">R$ {{ total|brl }}</p>
+        <p class="text-xs text-neutral-400 mt-1">de R$ {{ cartao.limite|brl }} de limite</p>
     </div>
     <!-- Uso do limite -->
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
@@ -111,7 +112,7 @@
                         <span class="bg-gray-100 text-gray-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">{{ t.categoria }}</span>
                     </td>
                     <td class="px-5 py-3 text-right text-sm font-bold text-red-600 whitespace-nowrap">
-                        R$ {{ t.valor|floatformat:2 }}
+                        R$ {{ t.valor|brl }}
                     </td>
                 </tr>
                 {% endfor %}
