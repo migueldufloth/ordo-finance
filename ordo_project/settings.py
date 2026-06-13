@@ -110,6 +110,8 @@ LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 LOGIN_URL = '/accounts/login/'
 
+REPORTS_API_URL = os.environ.get('REPORTS_API_URL', 'http://api:8000')
+
 # Sentry — monitoramento de erros em produção
 # Só ativa se SENTRY_DSN estiver definido no ambiente
 _SENTRY_DSN = os.environ.get('SENTRY_DSN', '')

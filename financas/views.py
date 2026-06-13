@@ -1,6 +1,8 @@
 import csv
 import decimal
 
+import requests as http_requests
+from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
@@ -359,60 +361,45 @@ class CategoriaDeleteView(BaseCategoriaView, DeleteView):
 
 @login_required
 def gerar_relatorio(request):
-    """Gera relatório PDF das transações filtradas diretamente via fpdf2."""
-    from fpdf import FPDF
+    _MESES = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+              'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 
     qs = _filtrar_transacoes(request)
 
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_margins(15, 15, 15)
+    mes = request.GET.get('mes', '').strip()
+    ano = request.GET.get('ano', '').strip()
+    try:
+        periodo = f'{_MESES[int(mes)]}/{ano}' if mes and ano else 'Todos os lançamentos'
+    except (ValueError, IndexError):
+        periodo = 'Todos os lançamentos'
 
-    # Cabeçalho
-    pdf.set_font('Helvetica', 'B', 16)
-    pdf.cell(0, 10, 'Ordo Finance - Relatório de Transações', ln=True, align='C')
-    pdf.set_font('Helvetica', '', 10)
-    pdf.cell(0, 6, f'Usuário: {request.user.username}', ln=True)
-    pdf.cell(0, 6, f'Gerado em: {timezone.localdate().strftime("%d/%m/%Y")}', ln=True)
-    pdf.ln(4)
+    payload = {
+        'usuario': request.user.username,
+        'periodo': periodo,
+        'transacoes': [
+            {
+                'descricao': t.descricao,
+                'valor': float(t.valor),
+                'tipo': t.tipo,
+                'data': t.data.isoformat(),
+                'categoria': t.categoria.nome if t.categoria else '',
+            }
+            for t in qs
+        ],
+    }
 
-    # Cabeçalho da tabela
-    pdf.set_font('Helvetica', 'B', 9)
-    pdf.set_fill_color(240, 240, 240)
-    col_widths = [25, 70, 35, 22, 28]
-    headers = ['Data', 'Descrição', 'Categoria', 'Tipo', 'Valor (R$)']
-    for w, h in zip(col_widths, headers):
-        pdf.cell(w, 7, h, border=1, fill=True)
-    pdf.ln()
+    try:
+        resp = http_requests.post(
+            settings.REPORTS_API_URL + '/relatorio/pdf',
+            json=payload,
+            timeout=30,
+        )
+        resp.raise_for_status()
+    except Exception:
+        messages.error(request, 'Não foi possível gerar o relatório. Tente novamente.')
+        return redirect('lista_transacoes')
 
-    # Linhas da tabela
-    pdf.set_font('Helvetica', '', 9)
-    total_receitas = decimal.Decimal('0')
-    total_despesas = decimal.Decimal('0')
-    fill = False
-    pdf.set_fill_color(250, 250, 250)
-    for t in qs:
-        pdf.cell(col_widths[0], 6, t.data.strftime('%d/%m/%Y'), border=1, fill=fill)
-        pdf.cell(col_widths[1], 6, t.descricao[:45], border=1, fill=fill)
-        pdf.cell(col_widths[2], 6, (t.categoria.nome if t.categoria else '')[:22], border=1, fill=fill)
-        pdf.cell(col_widths[3], 6, t.get_tipo_display(), border=1, fill=fill)
-        pdf.cell(col_widths[4], 6, f'{t.valor:.2f}', border=1, align='R', fill=fill)
-        pdf.ln()
-        fill = not fill
-        if t.tipo == 'RECEITA':
-            total_receitas += t.valor
-        else:
-            total_despesas += t.valor
-
-    # Totais
-    pdf.ln(4)
-    pdf.set_font('Helvetica', 'B', 10)
-    pdf.cell(0, 7, f'Total Receitas:  R$ {total_receitas:.2f}', ln=True)
-    pdf.cell(0, 7, f'Total Despesas:  R$ {total_despesas:.2f}', ln=True)
-    saldo = total_receitas - total_despesas
-    pdf.cell(0, 7, f'Saldo:           R$ {saldo:.2f}', ln=True)
-
-    response = HttpResponse(bytes(pdf.output()), content_type='application/pdf')
+    response = HttpResponse(resp.content, content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="relatorio-ordo.pdf"'
     return response
 
