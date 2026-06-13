@@ -73,8 +73,7 @@
 
 {% else %}
 <div class="flex-1 flex items-center justify-center">
-    {% url 'categoria_create' as btn_url %}
-    {% include "includes/empty_state.html" with icon="folder" title="Nenhuma categoria cadastrada" subtitle="Crie categorias para organizar suas transações." btn_url=btn_url btn_text="Adicionar Categoria" %}
+    {% include "includes/empty_state.html" with icon="folder" title="Nenhuma categoria cadastrada" subtitle="Crie categorias para organizar suas transações." %}
 </div>
 {% endif %}
 

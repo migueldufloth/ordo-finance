@@ -104,8 +104,7 @@
 
 {% else %}
 <div class="flex-1 flex items-center justify-center">
-    {% url 'orcamento_create' as btn_url %}
-    {% include "includes/empty_state.html" with icon="target" title="Nenhum orçamento definido" subtitle="Defina limites mensais por categoria para controlar seus gastos." btn_url=btn_url btn_text="Criar Orçamento" %}
+    {% include "includes/empty_state.html" with icon="target" title="Nenhum orçamento definido" subtitle="Defina limites mensais por categoria para controlar seus gastos." %}
 </div>
 {% endif %}
 

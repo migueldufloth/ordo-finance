@@ -115,8 +115,7 @@
 
 {% else %}
 <div class="flex-1 flex items-center justify-center">
-    {% url 'cartao_credito_create' as btn_url %}
-    {% include "includes/empty_state.html" with icon="credit-card" title="Nenhum cartão cadastrado" subtitle="Adicione seus cartões para controlar limites e vencimentos." btn_url=btn_url btn_text="Adicionar Cartão" %}
+    {% include "includes/empty_state.html" with icon="credit-card" title="Nenhum cartão cadastrado" subtitle="Adicione seus cartões para controlar limites e vencimentos." %}
 </div>
 {% endif %}
 

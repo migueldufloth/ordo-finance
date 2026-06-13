@@ -225,8 +225,7 @@
         </a>
     </div>
     {% else %}
-    {% url 'adicionar_transacao' as btn_url %}
-    {% include "includes/empty_state.html" with icon="receipt" title="Nenhum lançamento encontrado" subtitle="Comece adicionando sua primeira transação." btn_url=btn_url btn_text="Adicionar Transação" %}
+    {% include "includes/empty_state.html" with icon="receipt" title="Nenhum lançamento encontrado" subtitle="Comece adicionando sua primeira transação." %}
     {% endif %}
 </div>
 {% endif %}
