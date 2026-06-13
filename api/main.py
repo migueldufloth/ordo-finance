@@ -34,9 +34,21 @@ class RelatorioRequest(BaseModel):
     transacoes: list[TransacaoItem]
 
 
+def _fmt_num(valor: float) -> str:
+    return f'{abs(valor):,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
+
+
 def _brl(valor: float) -> str:
-    s = f'{abs(valor):,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
+    s = _fmt_num(valor)
     return f'-R$ {s}' if valor < 0 else f'R$ {s}'
+
+
+def _fig_to_buf(fig) -> io.BytesIO:
+    buf = io.BytesIO()
+    fig.savefig(buf, format='png', dpi=140, bbox_inches='tight', facecolor='white')
+    plt.close(fig)
+    buf.seek(0)
+    return buf
 
 
 def _pizza_categorias(transacoes: list[TransacaoItem]) -> io.BytesIO | None:
@@ -78,11 +90,7 @@ def _pizza_categorias(transacoes: list[TransacaoItem]) -> io.BytesIO | None:
     ax.set_title('Despesas por Categoria', fontsize=10, fontweight='bold', pad=10)
     fig.subplots_adjust(bottom=0.22)
 
-    buf = io.BytesIO()
-    fig.savefig(buf, format='png', dpi=140, bbox_inches='tight', facecolor='white')
-    plt.close(fig)
-    buf.seek(0)
-    return buf
+    return _fig_to_buf(fig)
 
 
 def _barras_mensal(transacoes: list[TransacaoItem]) -> io.BytesIO | None:
@@ -122,11 +130,7 @@ def _barras_mensal(transacoes: list[TransacaoItem]) -> io.BytesIO | None:
     ax.yaxis.grid(True, linestyle='--', alpha=0.35)
     plt.tight_layout()
 
-    buf = io.BytesIO()
-    fig.savefig(buf, format='png', dpi=140, bbox_inches='tight', facecolor='white')
-    plt.close(fig)
-    buf.seek(0)
-    return buf
+    return _fig_to_buf(fig)
 
 
 @app.get('/health')
@@ -235,8 +239,7 @@ def relatorio_pdf(req: RelatorioRequest):
         pdf.set_text_color(*cor_tipo)
         pdf.cell(cw[3], 6, label_tipo, fill=zebra, align='C')
         pdf.set_text_color(60, 60, 60)
-        valor_fmt = f'{t.valor:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
-        pdf.cell(cw[4], 6, valor_fmt, fill=zebra, align='R')
+        pdf.cell(cw[4], 6, _fmt_num(t.valor), fill=zebra, align='R')
         pdf.ln()
 
         if pdf.get_y() > pdf.h - 25:
