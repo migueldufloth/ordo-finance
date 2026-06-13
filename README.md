@@ -1,10 +1,10 @@
 # Ordo Finance
 
-Sistema de gestão financeira pessoal construído com Django. Totalmente containerizado via Docker e implantado na Oracle Cloud Always Free.
+Sistema de gestão financeira pessoal construído com Django. Totalmente containerizado via Docker e implantado em VM própria (Ubuntu Server) com CI/CD automatizado via GitHub Actions.
 
 ## Visão Geral
 
-A aplicação permite controle de receitas e despesas, categorização de lançamentos, gerenciamento de cartões de crédito, orçamentos mensais por categoria, transações recorrentes e faturas de cartão. Toda a geração de PDF é feita diretamente no Django via fpdf2.
+A aplicação permite controle de receitas e despesas, categorização de lançamentos, gerenciamento de cartões de crédito, orçamentos mensais por categoria, transações recorrentes e faturas de cartão. A geração de relatórios PDF com gráficos é feita por um microserviço FastAPI dedicado (`api`), que usa matplotlib e fpdf2; o Django delega a geração via HTTP e retorna o arquivo ao usuário.
 
 ---
 
@@ -55,7 +55,7 @@ Entidades, atributos tipados, enums e regras de integridade referencial.
 | GET/POST | `/transacoes/adicionar/` | `adicionar_transacao` | Formulário de nova transação |
 | GET/POST | `/transacoes/<pk>/editar/` | `editar_transacao` | Editar transação existente |
 | GET/POST | `/transacoes/<pk>/remover/` | `remover_transacao` | Confirmar e remover transação |
-| POST | `/transacoes/relatorio/` | `gerar_relatorio` | Gera relatório PDF via fpdf2 e retorna download |
+| POST | `/transacoes/relatorio/` | `gerar_relatorio` | Delega geração de PDF ao microserviço FastAPI e retorna download |
 | GET | `/transacoes/exportar-csv/` | `exportar_csv` | Exporta transações filtradas em CSV |
 | GET | `/transacoes/cartoes/` | `cartao_credito_list` | Lista de cartões de crédito |
 | GET/POST | `/transacoes/cartoes/adicionar/` | `cartao_credito_create` | Novo cartão de crédito |
@@ -91,7 +91,7 @@ Entidades, atributos tipados, enums e regras de integridade referencial.
 | RF05 | Dashboard com saldo total, resumo mensal, gráficos e últimos 5 lançamentos |
 | RF06 | Histórico completo de transações com paginação (10 itens/página) |
 | RF07 | Isolamento total de dados por usuário |
-| RF08 | Exportação de relatório em PDF gerado diretamente no Django via fpdf2 |
+| RF08 | Geração de relatório PDF com gráficos via microserviço FastAPI (matplotlib + fpdf2) e download direto pelo Django |
 | RF09 | Orçamentos mensais por categoria com acompanhamento de gasto e percentual |
 | RF10 | Transações recorrentes com frequência configurável (mensal, quinzenal, semanal, anual) |
 | RF11 | Faturas de cartão de crédito por mês com controle de pagamento |
@@ -115,11 +115,11 @@ Entidades, atributos tipados, enums e regras de integridade referencial.
 
 | Camada | Tecnologias |
 |--------|------------|
-| Backend | Python 3.12 · Django 5.x · fpdf2 |
-| Servidores | Gunicorn · WhiteNoise + Brotli (assets) |
+| Backend (web) | Python 3.12 · Django 5.x · Gunicorn · WhiteNoise + Brotli |
+| Backend (relatórios) | FastAPI · matplotlib · fpdf2 · uvicorn |
 | Frontend | Django Templates · TailwindCSS · Alpine.js · Chart.js · Lucide Icons |
 | Banco de Dados | PostgreSQL 15 · psycopg2 · dj-database-url |
-| Infraestrutura | Docker · Docker Compose · Oracle Cloud Always Free |
+| Infraestrutura | Docker · Docker Compose · VM própria (Ubuntu Server) |
 | CI/CD | GitHub Actions · Self-hosted Runner |
 | Observabilidade | Sentry (erros) · Better Stack (uptime) |
 
@@ -158,14 +158,14 @@ git push origin main
   └── manage.py test financas
        │ (somente se passar)
        ▼
-  Job: deploy (self-hosted — VM Oracle Cloud)
-  ├── git pull origin main
-  ├── docker compose -f docker-compose.prod.yml build web
+  Job: deploy (self-hosted — VM própria Ubuntu Server)
+  ├── git fetch origin main && git reset --hard origin/main
+  ├── docker compose -f docker-compose.prod.yml build api web
   ├── docker compose -f docker-compose.prod.yml up -d
   └── manage.py migrate --noinput
 ```
 
-O runner roda como serviço `systemd` na VM, conectando-se ao GitHub via HTTPS de saída — sem portas abertas para automação.
+O runner roda como serviço `systemd` na VM própria, conectando-se ao GitHub via HTTPS de saída — sem portas abertas para automação. O container `web` fica exposto apenas em `127.0.0.1:9000`, acessível externamente somente através de proxy reverso (nginx).
 
 ---
 
@@ -186,6 +186,10 @@ O endpoint `/health/` retorna `{"status": "ok", "database": "ok"}` (HTTP 200) qu
 ordo-finance/
 ├── .github/workflows/
 │   └── deploy.yml              # Pipeline CI/CD (testes + deploy automático)
+├── api/                        # Microserviço FastAPI — geração de relatórios PDF
+│   ├── main.py                 # Endpoints FastAPI + geração de PDF com matplotlib e fpdf2
+│   ├── Dockerfile              # Imagem do container api
+│   └── requirements.txt
 ├── financas/                   # App Django principal
 │   ├── models.py               # Transacao, CartaoCredito, Categoria, Orcamento, FaturaCartao, TransacaoRecorrente
 │   ├── views.py                # FBVs + CBVs
@@ -194,12 +198,12 @@ ordo-finance/
 │   ├── tests.py                # Testes de validators, autenticação e isolamento de dados
 │   └── templates/financas/     # Templates HTML
 ├── ordo_project/
-│   ├── settings.py             # Configurações (dj-database-url, WhiteNoise, Sentry)
+│   ├── settings.py             # Configurações (dj-database-url, WhiteNoise, Sentry, CSRF)
 │   ├── urls.py                 # Roteador raiz
 │   └── wsgi.py
 ├── docker-compose.yml          # Ambiente de desenvolvimento local
-├── docker-compose.prod.yml     # Ambiente de produção (Oracle Cloud)
-├── Dockerfile                  # Imagem do container Django
+├── docker-compose.prod.yml     # Ambiente de produção (VM própria — 3 serviços: db, api, web)
+├── Dockerfile                  # Imagem do container Django (web)
 ├── entrypoint.sh               # migrate + collectstatic + gunicorn
 └── requirements.txt
 ```
