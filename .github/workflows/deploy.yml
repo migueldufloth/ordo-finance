@@ -55,8 +55,7 @@ jobs:
         working-directory: /home/ubuntu/ordo-finance
         run: |
           git fetch origin main
-          BEFORE=$(git rev-parse HEAD)
-          git pull origin main
+          git reset --hard origin/main
 
           docker compose -f docker-compose.prod.yml build api web
           docker compose -f docker-compose.prod.yml up -d
