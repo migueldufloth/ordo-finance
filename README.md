@@ -4,7 +4,7 @@ Sistema de gestão financeira pessoal com arquitetura híbrida: monolito Django 
 
 ## Visão Geral
 
-A aplicação permite controle de receitas e despesas, categorização de lançamentos, gerenciamento de cartões de crédito e visualização de balanços financeiros. O projeto demonstra a coexistência de um monolito robusto (Django + Gunicorn) com um microserviço especializado (FastAPI + Uvicorn), utilizando conteinerização Docker para orquestração dos ambientes de desenvolvimento e produção.
+A aplicação permite controle de receitas e despesas, categorização de lançamentos, gerenciamento de cartões de crédito, orçamentos mensais por categoria, transações recorrentes e faturas de cartão. O projeto demonstra a coexistência de um monolito robusto (Django + Gunicorn) com um microserviço especializado (FastAPI + Uvicorn), utilizando conteinerização Docker para orquestração dos ambientes de desenvolvimento e produção.
 
 ---
 
@@ -63,14 +63,26 @@ Entidades, atributos tipados, enums e regras de integridade referencial.
 | GET/POST | `/transacoes/adicionar/` | `adicionar_transacao` | Formulário de nova transação |
 | GET/POST | `/transacoes/<pk>/editar/` | `editar_transacao` | Editar transação existente |
 | GET/POST | `/transacoes/<pk>/remover/` | `remover_transacao` | Confirmar e remover transação |
+| POST | `/transacoes/relatorio/` | `gerar_relatorio` | Gera relatório PDF via microserviço FastAPI |
+| GET | `/transacoes/exportar-csv/` | `exportar_csv` | Exporta transações filtradas em CSV |
 | GET | `/transacoes/cartoes/` | `cartao_credito_list` | Lista de cartões de crédito |
 | GET/POST | `/transacoes/cartoes/adicionar/` | `cartao_credito_create` | Novo cartão de crédito |
 | GET/POST | `/transacoes/cartoes/<pk>/editar/` | `cartao_credito_update` | Editar cartão |
 | GET/POST | `/transacoes/cartoes/<pk>/remover/` | `cartao_credito_delete` | Remover cartão |
+| GET | `/transacoes/cartoes/<pk>/fatura/` | `fatura_cartao` | Fatura mensal do cartão com transações vinculadas |
+| POST | `/transacoes/faturas/<pk>/pagar/` | `marcar_fatura_paga` | Marca fatura como paga |
 | GET | `/transacoes/categorias/` | `categoria_list` | Lista de categorias |
 | GET/POST | `/transacoes/categorias/adicionar/` | `categoria_create` | Nova categoria |
 | GET/POST | `/transacoes/categorias/<pk>/editar/` | `categoria_update` | Editar categoria |
 | GET/POST | `/transacoes/categorias/<pk>/remover/` | `categoria_delete` | Remover categoria |
+| GET | `/transacoes/orcamentos/` | `orcamento_list` | Lista de orçamentos com gasto mensal por categoria |
+| GET/POST | `/transacoes/orcamentos/adicionar/` | `orcamento_create` | Novo orçamento |
+| GET/POST | `/transacoes/orcamentos/<pk>/editar/` | `orcamento_update` | Editar orçamento |
+| GET/POST | `/transacoes/orcamentos/<pk>/remover/` | `orcamento_delete` | Remover orçamento |
+| GET | `/transacoes/recorrentes/` | `transacao_recorrente_list` | Lista de transações recorrentes |
+| GET/POST | `/transacoes/recorrentes/adicionar/` | `transacao_recorrente_create` | Nova transação recorrente |
+| GET/POST | `/transacoes/recorrentes/<pk>/editar/` | `transacao_recorrente_update` | Editar transação recorrente |
+| GET/POST | `/transacoes/recorrentes/<pk>/remover/` | `transacao_recorrente_delete` | Remover transação recorrente |
 | GET | `/health/` | `health` | Health check da aplicação e do banco de dados |
 | GET | `/admin/` | — | Django Admin |
 
@@ -96,6 +108,10 @@ Entidades, atributos tipados, enums e regras de integridade referencial.
 | RF06 | Histórico completo de transações com paginação (10 itens/página) |
 | RF07 | Isolamento total de dados por usuário |
 | RF08 | Exportação de relatórios em PDF via microserviço FastAPI |
+| RF09 | Orçamentos mensais por categoria com acompanhamento de gasto e percentual |
+| RF10 | Transações recorrentes com frequência configurável (mensal, quinzenal, semanal, anual) |
+| RF11 | Faturas de cartão de crédito por mês com controle de pagamento |
+| RF12 | Exportação de transações em CSV |
 
 ## Requisitos Não Funcionais
 
@@ -193,9 +209,9 @@ ordo-finance/
 │   ├── requirements.txt
 │   └── Dockerfile
 ├── financas/                   # App Django principal
-│   ├── models.py               # Transacao, CartaoCredito, Categoria
+│   ├── models.py               # Transacao, CartaoCredito, Categoria, Orcamento, FaturaCartao, TransacaoRecorrente
 │   ├── views.py                # FBVs + CBVs
-│   ├── forms.py                # TransacaoForm, CartaoCreditoForm, CategoriaForm
+│   ├── forms.py                # TransacaoForm, CartaoCreditoForm, CategoriaForm, OrcamentoForm, TransacaoRecorrenteForm
 │   ├── urls.py                 # Rotas do app
 │   └── templates/financas/     # Templates HTML
 ├── ordo_project/
