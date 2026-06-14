@@ -17,7 +17,7 @@
                 months: ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'],
                 prev() { this.mes--; if (this.mes < 1) { this.mes = 12; this.ano--; } this.$refs.form.submit(); },
                 next() { this.mes++; if (this.mes > 12) { this.mes = 1; this.ano++; } this.$refs.form.submit(); }
-             }" class="flex items-center gap-0.5 bg-white border border-neutral-200 rounded-lg px-1">
+             }" class="flex items-center gap-0.5 bg-white border border-neutral-200 rounded-lg px-1 py-1">
             <form x-ref="form" method="get" class="hidden">
                 <input type="hidden" name="mes" :value="mes">
                 <input type="hidden" name="ano" :value="ano">
@@ -30,11 +30,6 @@
                 <i data-lucide="chevron-right" class="w-4 h-4"></i>
             </button>
         </div>
-        <a href="{% url 'gerar_relatorio' %}?mes={{ mes }}&ano={{ ano }}"
-            class="inline-flex items-center space-x-2 px-3 py-2 text-sm font-medium bg-white border border-neutral-200 text-neutral-600 hover:text-neutral-800 hover:bg-neutral-50 rounded-lg transition-colors duration-150">
-            <i data-lucide="download" class="w-4 h-4"></i>
-            <span>Exportar PDF</span>
-        </a>
         <a href="{% url 'adicionar_transacao' %}"
             class="group inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors duration-150 shadow-sm">
             <i data-lucide="plus" class="w-4 h-4 group-hover:rotate-90 transition-transform duration-150"></i>
@@ -146,13 +141,6 @@
         </div>
         {% endfor %}
     </div>
-    {% if orcamentos|length > 5 %}
-    <div class="px-5 py-2 border-t border-gray-100 text-center">
-        <a href="{% url 'orcamento_list' %}" class="text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors">
-            Ver todos os {{ orcamentos|length }} orçamentos →
-        </a>
-    </div>
-    {% endif %}
 </div>
 {% endif %}
 
@@ -173,13 +161,13 @@
     <div class="px-5 py-3 space-y-3">
         {% for c in cartoes|slice:":4" %}
         <div class="flex items-center gap-3">
-            <a href="{% url 'fatura_cartao' c.pk %}" class="text-sm font-medium text-dark-700 hover:text-primary-600 transition-colors w-32 truncate">{{ c.nome }}</a>
-            <div class="flex-1 bg-gray-100 rounded-full h-2">
+            <a href="{% url 'fatura_cartao' c.pk %}" class="text-sm font-medium text-dark-700 hover:text-primary-600 transition-colors w-24 shrink-0 truncate">{{ c.nome }}</a>
+            <div class="flex-1 min-w-0 bg-gray-100 rounded-full h-2">
                 <div class="h-2 rounded-full transition-all duration-300
                     {% if c.percentual_limite >= 90 %}bg-red-500{% elif c.percentual_limite >= 70 %}bg-amber-400{% else %}bg-green-500{% endif %}"
                     style="width: {{ c.percentual_limite }}%"></div>
             </div>
-            <span class="text-xs font-semibold w-28 text-right {% if c.percentual_limite >= 90 %}text-red-600{% elif c.percentual_limite >= 70 %}text-amber-600{% else %}text-neutral-500{% endif %}">
+            <span class="text-xs font-semibold shrink-0 whitespace-nowrap text-right {% if c.percentual_limite >= 90 %}text-red-600{% elif c.percentual_limite >= 70 %}text-amber-600{% else %}text-neutral-500{% endif %}">
                 R$ {{ c.gasto_mes|brl }} / R$ {{ c.limite|brl }}
             </span>
         </div>
