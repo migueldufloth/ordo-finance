@@ -10,21 +10,26 @@
         <p class="text-dark-500 text-sm">{% for n, nome in meses_lista %}{% if n == mes %}{{ nome }} {{ ano }}{% endif %}{% endfor %}</p>
     </div>
     <div class="flex items-center gap-2 flex-wrap">
-        <!-- Seletor de período -->
-        <form method="get" x-data class="flex items-center gap-2">
-            <select name="mes" x-on:change="$el.closest('form').submit()"
-                class="px-2 py-1.5 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 bg-white">
-                {% for num, nome in meses_lista %}
-                <option value="{{ num }}" {% if num == mes %}selected{% endif %}>{{ nome }}</option>
-                {% endfor %}
-            </select>
-            <select name="ano" x-on:change="$el.closest('form').submit()"
-                class="px-2 py-1.5 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 bg-white">
-                {% for a in anos_lista %}
-                <option value="{{ a }}" {% if a == ano %}selected{% endif %}>{{ a }}</option>
-                {% endfor %}
-            </select>
-        </form>
+        <!-- Navegação de período -->
+        <div x-data="{
+                mes: {{ mes }},
+                ano: {{ ano }},
+                months: ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'],
+                prev() { this.mes--; if (this.mes < 1) { this.mes = 12; this.ano--; } this.$refs.form.submit(); },
+                next() { this.mes++; if (this.mes > 12) { this.mes = 1; this.ano++; } this.$refs.form.submit(); }
+             }" class="flex items-center gap-0.5 bg-white border border-neutral-200 rounded-lg px-1">
+            <form x-ref="form" method="get" class="hidden">
+                <input type="hidden" name="mes" :value="mes">
+                <input type="hidden" name="ano" :value="ano">
+            </form>
+            <button type="button" @click="prev()" class="p-1.5 rounded-md text-neutral-500 hover:text-neutral-800 hover:bg-neutral-100 transition-colors">
+                <i data-lucide="chevron-left" class="w-4 h-4"></i>
+            </button>
+            <span class="text-sm font-medium text-dark-700 w-32 text-center" x-text="months[mes-1] + ' ' + ano"></span>
+            <button type="button" @click="next()" class="p-1.5 rounded-md text-neutral-500 hover:text-neutral-800 hover:bg-neutral-100 transition-colors">
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </button>
+        </div>
         <a href="{% url 'gerar_relatorio' %}?mes={{ mes }}&ano={{ ano }}"
             class="inline-flex items-center space-x-2 px-3 py-2 text-sm font-medium bg-white border border-neutral-200 text-neutral-600 hover:text-neutral-800 hover:bg-neutral-50 rounded-lg transition-colors duration-150">
             <i data-lucide="download" class="w-4 h-4"></i>
@@ -43,7 +48,7 @@
     <div class="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden animate-slide-up">
         <div class="h-1 bg-emerald-500"></div>
         <div class="p-4">
-            <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center mb-3">
                 <div class="w-9 h-9 bg-green-100 rounded-xl flex items-center justify-center">
                     <i data-lucide="trending-up" class="w-5 h-5 text-green-600"></i>
                 </div>
@@ -55,7 +60,7 @@
     <div class="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden animate-slide-up">
         <div class="h-1 bg-red-500"></div>
         <div class="p-4">
-            <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center mb-3">
                 <div class="w-9 h-9 bg-red-100 rounded-xl flex items-center justify-center">
                     <i data-lucide="trending-down" class="w-5 h-5 text-red-600"></i>
                 </div>
@@ -137,7 +142,7 @@
             <div class="w-full bg-gray-100 rounded-full h-2">
                 <div class="h-2 rounded-full transition-all duration-300
                     {% if o.percentual >= 90 %}bg-red-500{% elif o.percentual >= 70 %}bg-amber-400{% else %}bg-green-500{% endif %}"
-                    style="width: {{ o.percentual }}%"></div>
+                    style="width: {% if o.percentual > 100 %}100{% else %}{{ o.percentual }}{% endif %}%"></div>
             </div>
         </div>
         {% endfor %}

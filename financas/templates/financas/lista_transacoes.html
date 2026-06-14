@@ -58,7 +58,7 @@
             <!-- Tipo -->
             <div class="min-w-[110px]">
                 <label class="block text-xs font-medium text-neutral-500 mb-1">Tipo</label>
-                <select name="tipo" class="w-full px-2 py-1.5 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300">
+                <select name="tipo" @change="$el.closest('form').submit()" class="w-full px-2 py-1.5 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300">
                     <option value="">Todos</option>
                     <option value="RECEITA" {% if filtros.tipo == 'RECEITA' %}selected{% endif %}>Receita</option>
                     <option value="DESPESA" {% if filtros.tipo == 'DESPESA' %}selected{% endif %}>Despesa</option>
@@ -67,7 +67,7 @@
             <!-- Mês -->
             <div class="min-w-[120px]">
                 <label class="block text-xs font-medium text-neutral-500 mb-1">Mês</label>
-                <select name="mes" class="w-full px-2 py-1.5 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300">
+                <select name="mes" @change="$el.closest('form').submit()" class="w-full px-2 py-1.5 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300">
                     <option value="">Todos</option>
                     {% for num, nome in meses %}
                     <option value="{{ num }}" {% if filtros.mes == num|stringformat:"i" %}selected{% endif %}>{{ nome }}</option>
@@ -77,7 +77,7 @@
             <!-- Ano -->
             <div class="min-w-[90px]">
                 <label class="block text-xs font-medium text-neutral-500 mb-1">Ano</label>
-                <select name="ano" class="w-full px-2 py-1.5 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300">
+                <select name="ano" @change="$el.closest('form').submit()" class="w-full px-2 py-1.5 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300">
                     <option value="">Todos</option>
                     {% for ano in anos %}
                     <option value="{{ ano }}" {% if filtros.ano == ano|stringformat:"i" %}selected{% endif %}>{{ ano }}</option>
@@ -88,7 +88,7 @@
             {% if categorias %}
             <div class="min-w-[130px]">
                 <label class="block text-xs font-medium text-neutral-500 mb-1">Categoria</label>
-                <select name="categoria" class="w-full px-2 py-1.5 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300">
+                <select name="categoria" @change="$el.closest('form').submit()" class="w-full px-2 py-1.5 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300">
                     <option value="">Todas</option>
                     {% for cat in categorias %}
                     <option value="{{ cat.pk }}" {% if filtros.categoria == cat.pk|stringformat:"i" %}selected{% endif %}>{{ cat.nome }}</option>
@@ -100,7 +100,7 @@
             {% if cartoes %}
             <div class="min-w-[130px]">
                 <label class="block text-xs font-medium text-neutral-500 mb-1">Cartão</label>
-                <select name="cartao" class="w-full px-2 py-1.5 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300">
+                <select name="cartao" @change="$el.closest('form').submit()" class="w-full px-2 py-1.5 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300">
                     <option value="">Todos</option>
                     {% for cartao in cartoes %}
                     <option value="{{ cartao.pk }}" {% if filtros.cartao == cartao.pk|stringformat:"i" %}selected{% endif %}>{{ cartao.nome }}</option>
@@ -108,15 +108,11 @@
                 </select>
             </div>
             {% endif %}
-            <!-- Botões -->
-            <div class="flex gap-2">
-                <button type="submit"
-                    class="px-3 py-1.5 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors duration-150">
-                    Filtrar
-                </button>
+            <!-- Limpar -->
+            <div class="flex items-end pb-0.5">
                 <a href="{% url 'lista_transacoes' %}"
-                    class="px-3 py-1.5 text-sm font-medium text-neutral-600 bg-neutral-100 hover:bg-neutral-200 rounded-lg transition-colors duration-150">
-                    Limpar
+                    class="text-sm font-medium text-neutral-400 hover:text-neutral-600 transition-colors duration-150 whitespace-nowrap">
+                    Limpar filtros
                 </a>
             </div>
         </div>
@@ -154,7 +150,7 @@
             </thead>
             <tbody class="divide-y divide-neutral-200">
                 {% for transacao in page_obj %}
-                <tr class="hover:bg-gray-50 transition-colors">
+                <tr class="hover:bg-gray-50 transition-colors cursor-pointer" @click="window.location='{% url 'editar_transacao' transacao.pk %}'">
                     <td class="px-5 py-3 whitespace-nowrap">
                         <div class="flex items-center space-x-2">
                             <div class="w-8 h-8 {% if transacao.tipo == 'RECEITA' %}bg-green-100{% else %}bg-red-100{% endif %} rounded-lg flex items-center justify-center flex-shrink-0">
@@ -191,11 +187,11 @@
                     </td>
                     <td class="px-5 py-3 whitespace-nowrap text-center">
                         <div class="flex items-center justify-center space-x-1">
-                            <a href="{% url 'editar_transacao' transacao.pk %}"
+                            <a href="{% url 'editar_transacao' transacao.pk %}" @click.stop
                                class="p-1.5 text-neutral-400 hover:text-neutral-800 hover:bg-neutral-100 rounded-md transition-colors duration-150" title="Editar">
                                 <i data-lucide="pencil" class="w-4 h-4"></i>
                             </a>
-                            <button @click="url = '{% url 'remover_transacao' transacao.pk %}'; name = '{{ transacao.descricao|escapejs }}'; show = true"
+                            <button @click.stop="url = '{% url 'remover_transacao' transacao.pk %}'; name = '{{ transacao.descricao|escapejs }}'; show = true"
                                class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors duration-150" title="Remover">
                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
                             </button>

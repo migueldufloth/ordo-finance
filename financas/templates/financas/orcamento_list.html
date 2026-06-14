@@ -80,9 +80,13 @@
                                     {% if orcamento.percentual >= 90 %}bg-red-500
                                     {% elif orcamento.percentual >= 70 %}bg-amber-400
                                     {% else %}bg-green-500{% endif %}"
-                                    style="width: {{ orcamento.percentual }}%"></div>
+                                    style="width: {% if orcamento.percentual > 100 %}100{% else %}{{ orcamento.percentual }}{% endif %}%"></div>
                             </div>
+                            {% if orcamento.percentual > 100 %}
+                            <span class="text-xs font-semibold text-red-600 whitespace-nowrap">Excedido</span>
+                            {% else %}
                             <span class="text-xs font-medium text-neutral-500 w-9 text-right">{{ orcamento.percentual }}%</span>
+                            {% endif %}
                         </div>
                     </td>
                     <td class="px-5 py-4 text-center">
