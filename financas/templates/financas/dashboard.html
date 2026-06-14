@@ -46,7 +46,7 @@
 <!-- Cards de métricas -->
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
     <div class="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden animate-slide-up">
-        <div class="h-1 bg-emerald-500"></div>
+        <div class="h-1 bg-green-500"></div>
         <div class="p-4">
             <div class="flex items-center mb-3">
                 <div class="w-9 h-9 bg-green-100 rounded-xl flex items-center justify-center">
@@ -72,11 +72,10 @@
     <div class="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden animate-slide-up">
         <div class="h-1 {% if saldo_total >= 0 %}bg-green-500{% else %}bg-red-500{% endif %}"></div>
         <div class="p-4">
-            <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center mb-3">
                 <div class="w-9 h-9 {% if saldo_total >= 0 %}bg-green-100{% else %}bg-red-100{% endif %} rounded-xl flex items-center justify-center">
                     <i data-lucide="wallet" class="w-5 h-5 {% if saldo_total >= 0 %}text-green-600{% else %}text-red-600{% endif %}"></i>
                 </div>
-                <span class="text-xs font-medium text-dark-400">Acumulado</span>
             </div>
             <p class="text-xs text-dark-500 mb-0.5">Saldo Acumulado</p>
             <p class="text-2xl font-bold {% if saldo_total >= 0 %}text-dark-800{% else %}text-red-600{% endif %}">R$ {{ saldo_total|brl }}</p>
@@ -89,7 +88,7 @@
     <!-- Gastos por categoria (donut) -->
     <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-5 animate-fade-in">
         <h2 class="font-bold text-dark-800 text-sm mb-4">Gastos por Categoria</h2>
-        {% if chart_categorias != '{"labels": [], "data": []}' %}
+        {% if not chart_categorias_empty %}
         <div class="flex items-center justify-center" style="height:220px">
             <canvas id="chartCategorias"></canvas>
         </div>
@@ -142,7 +141,7 @@
             <div class="w-full bg-gray-100 rounded-full h-2">
                 <div class="h-2 rounded-full transition-all duration-300
                     {% if o.percentual >= 90 %}bg-red-500{% elif o.percentual >= 70 %}bg-amber-400{% else %}bg-green-500{% endif %}"
-                    style="width: {% if o.percentual > 100 %}100{% else %}{{ o.percentual }}{% endif %}%"></div>
+                    style="width: {{ o.percentual }}%"></div>
             </div>
         </div>
         {% endfor %}
@@ -180,7 +179,7 @@
                     {% if c.percentual_limite >= 90 %}bg-red-500{% elif c.percentual_limite >= 70 %}bg-amber-400{% else %}bg-green-500{% endif %}"
                     style="width: {{ c.percentual_limite }}%"></div>
             </div>
-            <span class="text-xs font-semibold text-neutral-500 w-28 text-right">
+            <span class="text-xs font-semibold w-28 text-right {% if c.percentual_limite >= 90 %}text-red-600{% elif c.percentual_limite >= 70 %}text-amber-600{% else %}text-neutral-500{% endif %}">
                 R$ {{ c.gasto_mes|brl }} / R$ {{ c.limite|brl }}
             </span>
         </div>

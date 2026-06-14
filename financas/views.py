@@ -130,6 +130,7 @@ def dashboard(request):
         'meses_lista': MESES,
         'anos_lista': anos_lista,
         'chart_categorias': chart_categorias,
+        'chart_categorias_empty': not gastos_cat,
         'chart_evolucao': chart_evolucao,
         'chart_saldo': chart_saldo,
         'orcamentos': orcamentos,
