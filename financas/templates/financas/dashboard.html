@@ -127,8 +127,8 @@
         {% for o in orcamentos|slice:":5" %}
         <div>
             <div class="flex justify-between items-center mb-1">
-                <span class="text-sm font-medium text-dark-700">{{ o.categoria.nome }}</span>
-                <span class="text-xs font-semibold
+                <span class="text-sm font-medium text-dark-700 truncate min-w-0">{{ o.categoria.nome }}</span>
+                <span class="text-xs font-semibold shrink-0 whitespace-nowrap ml-2
                     {% if o.percentual >= 90 %}text-red-600{% elif o.percentual >= 70 %}text-amber-600{% else %}text-neutral-500{% endif %}">
                     R$ {{ o.gasto_mes|brl }} / R$ {{ o.valor_mensal|brl }}
                 </span>
@@ -160,16 +160,18 @@
     </div>
     <div class="px-5 py-3 space-y-3">
         {% for c in cartoes|slice:":4" %}
-        <div class="flex items-center gap-3">
-            <a href="{% url 'fatura_cartao' c.pk %}" class="text-sm font-medium text-dark-700 hover:text-primary-600 transition-colors w-24 shrink-0 truncate">{{ c.nome }}</a>
-            <div class="flex-1 min-w-0 bg-gray-100 rounded-full h-2">
+        <div>
+            <div class="flex justify-between items-center mb-1">
+                <a href="{% url 'fatura_cartao' c.pk %}" class="text-sm font-medium text-dark-700 hover:text-primary-600 transition-colors truncate">{{ c.nome }}</a>
+                <span class="text-xs font-semibold shrink-0 whitespace-nowrap ml-2 {% if c.percentual_limite >= 90 %}text-red-600{% elif c.percentual_limite >= 70 %}text-amber-600{% else %}text-neutral-500{% endif %}">
+                    R$ {{ c.gasto_mes|brl }} / R$ {{ c.limite|brl }}
+                </span>
+            </div>
+            <div class="w-full bg-gray-100 rounded-full h-2">
                 <div class="h-2 rounded-full transition-all duration-300
                     {% if c.percentual_limite >= 90 %}bg-red-500{% elif c.percentual_limite >= 70 %}bg-amber-400{% else %}bg-green-500{% endif %}"
                     style="width: {{ c.percentual_limite }}%"></div>
             </div>
-            <span class="text-xs font-semibold shrink-0 whitespace-nowrap text-right {% if c.percentual_limite >= 90 %}text-red-600{% elif c.percentual_limite >= 70 %}text-amber-600{% else %}text-neutral-500{% endif %}">
-                R$ {{ c.gasto_mes|brl }} / R$ {{ c.limite|brl }}
-            </span>
         </div>
         {% endfor %}
     </div>
