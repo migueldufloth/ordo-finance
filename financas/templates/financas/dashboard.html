@@ -88,7 +88,7 @@
             <canvas id="chartCategorias"></canvas>
         </div>
         {% else %}
-        <div class="flex items-center justify-center h-48 text-dark-400 text-sm">Sem despesas neste período.</div>
+        <div class="flex items-center justify-center h-[220px] text-dark-400 text-sm">Sem despesas neste período.</div>
         {% endif %}
     </div>
 
@@ -173,13 +173,6 @@
         </div>
         {% endfor %}
     </div>
-    {% if cartoes|length > 4 %}
-    <div class="px-5 py-2 border-t border-gray-100 text-center">
-        <a href="{% url 'cartao_credito_list' %}" class="text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors">
-            Ver todos os {{ cartoes|length }} cartões →
-        </a>
-    </div>
-    {% endif %}
 </div>
 {% endif %}
 
@@ -229,7 +222,7 @@
                 <i data-lucide="receipt" class="w-6 h-6 text-gray-400"></i>
             </div>
             <h3 class="font-semibold text-dark-700 mb-1">Nenhum lançamento ainda</h3>
-            <p class="text-dark-500 text-sm">Use o botão <span class="font-medium text-dark-600">Novo Lançamento</span> acima para começar</p>
+            <p class="text-dark-500 text-sm">Adicione seu primeiro lançamento para começar.</p>
         </div>
         {% endif %}
     </div>
@@ -274,7 +267,7 @@
                     tooltip: {
                         backgroundColor: tooltipBg,
                         callbacks: {
-                            label: ctx => ` R$ ${ctx.parsed.toFixed(2).replace('.', ',')}`
+                            label: ctx => ` ${ctx.label}: R$ ${ctx.parsed.toFixed(2).replace('.', ',')}`
                         }
                     }
                 }
@@ -313,7 +306,7 @@
                     tooltip: {
                         backgroundColor: tooltipBg,
                         callbacks: {
-                            label: ctx => ` R$ ${ctx.parsed.y.toFixed(2).replace('.', ',')}`
+                            label: ctx => ` ${ctx.dataset.label}: R$ ${ctx.parsed.y.toFixed(2).replace('.', ',')}`
                         }
                     }
                 },
@@ -359,7 +352,7 @@
                     tooltip: {
                         backgroundColor: tooltipBg,
                         callbacks: {
-                            label: ctx => ` R$ ${ctx.parsed.y.toFixed(2).replace('.', ',')}`
+                            label: ctx => ` Saldo: R$ ${ctx.parsed.y.toFixed(2).replace('.', ',')}`
                         }
                     }
                 },
