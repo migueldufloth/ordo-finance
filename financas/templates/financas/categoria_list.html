@@ -2,19 +2,56 @@
 {% block title %}Categorias - Ordo Finance{% endblock %}
 {% block content %}
 
-<div x-data="{ show: false, url: '', name: '' }" class="h-full flex flex-col">
+<script>
+function categoriaModal() {
+    return {
+        show: false, url: '', name: '',
+        formOpen: false, formMode: 'create',
+        formAction: '', formNome: '',
+        errors: {}, submitting: false,
+
+        openCreate(url) {
+            this.formMode = 'create'; this.formAction = url;
+            this.formNome = ''; this.errors = {};
+            this.formOpen = true;
+            this.$nextTick(() => lucide.createIcons());
+        },
+        openEdit(url, nome) {
+            this.formMode = 'edit'; this.formAction = url;
+            this.formNome = nome; this.errors = {};
+            this.formOpen = true;
+            this.$nextTick(() => lucide.createIcons());
+        },
+        async submitForm(formEl) {
+            this.submitting = true; this.errors = {};
+            try {
+                const resp = await fetch(formEl.action, {
+                    method: 'POST', body: new FormData(formEl),
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const json = await resp.json();
+                if (resp.ok) { window.location.reload(); }
+                else { this.errors = json.errors || {}; }
+            } catch { toast('Erro de conexão.', { type: 'error' }); }
+            finally { this.submitting = false; }
+        }
+    };
+}
+</script>
+
+<div x-data="categoriaModal()" class="h-full flex flex-col">
 
 <!-- Header -->
-<div class="flex-none flex justify-between items-center mb-4 animate-fade-in">
+<div class="flex-none flex flex-wrap justify-between items-center gap-3 mb-4 animate-fade-in">
     <div>
         <h1 class="text-xl font-bold text-dark-800">Categorias</h1>
         <p class="text-dark-500 text-sm">Gerencie suas categorias de transações</p>
     </div>
-    <a href="{% url 'categoria_create' %}"
+    <button @click="openCreate('{% url 'categoria_create' %}')"
         class="group inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium tracking-wide text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors duration-150 shadow-sm">
         <i data-lucide="plus" class="w-4 h-4 group-hover:rotate-90 transition-transform duration-150"></i>
         <span>Nova Categoria</span>
-    </a>
+    </button>
 </div>
 
 {% if object_list %}
@@ -53,10 +90,10 @@
                     </td>
                     <td class="px-5 py-3 text-center">
                         <div class="flex items-center justify-center space-x-1">
-                            <a href="{% url 'categoria_update' categoria.pk %}"
+                            <button @click="openEdit('{% url 'categoria_update' categoria.pk %}', '{{ categoria.nome|escapejs }}')"
                                class="p-1.5 text-neutral-400 hover:text-neutral-800 hover:bg-neutral-100 rounded-md transition-colors duration-150" title="Editar">
                                 <i data-lucide="pencil" class="w-4 h-4"></i>
-                            </a>
+                            </button>
                             <button @click="url = '{% url 'categoria_delete' categoria.pk %}'; name = '{{ categoria.nome|escapejs }}'; show = true"
                                class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors duration-150" title="Remover">
                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
@@ -77,7 +114,42 @@
 </div>
 {% endif %}
 
+<!-- Modal de Exclusão -->
 {% include "includes/modal_delete.html" %}
+
+<!-- Modal de Formulário -->
+<template x-teleport="body">
+    <div x-show="formOpen" @keydown.escape.window="formOpen = false"
+         class="fixed inset-0 z-50 flex items-center justify-center" x-cloak>
+        <div class="absolute inset-0 bg-black/50"
+             x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+             x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+             @click="formOpen = false"></div>
+        <div class="relative bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-md mx-4"
+             x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-4 scale-95" x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+             x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0 scale-100" x-transition:leave-end="opacity-0 translate-y-4 scale-95">
+            {% include "includes/modal_header.html" with icon="folder" create_label="Nova Categoria" edit_label="Editar Categoria" %}
+            <form :action="formAction" method="post" @submit.prevent="submitForm($el)" class="p-5 space-y-4">
+                {% csrf_token %}
+                {% include "includes/modal_errors.html" %}
+                <div class="form-group">
+                    <label class="flex items-center space-x-2 text-dark-700 font-medium mb-1.5 text-sm">
+                        <i data-lucide="tag" class="w-4 h-4"></i>
+                        <span>Nome</span>
+                    </label>
+                    <input type="text" name="nome" x-model="formNome" required
+                           placeholder="Ex: Alimentação, Transporte">
+                    <template x-if="errors.nome">
+                        <template x-for="e in (errors.nome || [])" :key="e">
+                            <p class="text-red-600 text-xs mt-1" x-text="e"></p>
+                        </template>
+                    </template>
+                </div>
+                {% include "includes/modal_footer.html" %}
+            </form>
+        </div>
+    </div>
+</template>
 
 </div>
 {% endblock %}

@@ -1,0 +1,12 @@
+<div class="flex items-center justify-between p-5 border-b border-gray-100">
+    <div class="flex items-center space-x-2">
+        <div class="w-8 h-8 bg-primary-50 rounded-lg flex items-center justify-center">
+            <i data-lucide="{{ icon }}" class="w-4 h-4 text-primary-600"></i>
+        </div>
+        <h3 class="text-base font-semibold text-dark-800"
+            x-text="formMode === 'create' ? '{{ create_label }}' : '{{ edit_label }}'"></h3>
+    </div>
+    <button @click="formOpen = false" class="p-1.5 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors">
+        <i data-lucide="x" class="w-4 h-4"></i>
+    </button>
+</div>

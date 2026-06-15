@@ -1,0 +1,16 @@
+<div class="flex items-center justify-between pt-1 border-t border-gray-100">
+    <button type="button" @click="formOpen = false"
+        class="inline-flex items-center space-x-2 px-3 py-2 text-sm font-medium text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors">
+        <i data-lucide="x" class="w-4 h-4"></i>
+        <span>Cancelar</span>
+    </button>
+    <button type="submit" :disabled="{{ submit_disabled|default:'submitting' }}"
+        class="inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium tracking-wide text-white bg-primary-500 hover:bg-primary-600 disabled:opacity-60 rounded-lg transition-colors shadow-sm">
+        <svg x-show="submitting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+        </svg>
+        <i x-show="!submitting" data-lucide="check" class="w-4 h-4"></i>
+        <span x-text="submitting ? 'Salvando…' : 'Salvar'"></span>
+    </button>
+</div>

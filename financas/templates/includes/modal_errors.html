@@ -1,0 +1,7 @@
+<template x-if="errors.__all__">
+    <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+        <template x-for="e in (errors.__all__ || [])" :key="e">
+            <p class="text-red-600 text-sm" x-text="e"></p>
+        </template>
+    </div>
+</template>
