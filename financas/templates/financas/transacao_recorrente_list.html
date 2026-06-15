@@ -250,23 +250,43 @@ function recorrenteModal() {
 </div>
 {% endif %}
 
-{% if page_obj.paginator.count > 0 %}
+{% if page_obj.object_list %}
 <div class="flex-1 min-h-0 flex flex-col bg-white rounded-2xl shadow-md border border-gray-100 animate-slide-up overflow-hidden">
     <div class="flex-1 min-h-0 overflow-y-auto overflow-x-auto">
         <table class="min-w-full divide-y divide-neutral-200">
             <thead class="bg-gray-50 sticky top-0 z-10">
                 <tr class="text-neutral-500">
-                    <th class="px-5 py-3 text-xs font-medium text-left uppercase">Descrição</th>
-                    <th class="px-5 py-3 text-xs font-medium text-left uppercase hidden sm:table-cell">Frequência</th>
-                    <th class="px-5 py-3 text-xs font-medium text-left uppercase">Próxima Ocorrência</th>
-                    <th class="px-5 py-3 text-xs font-medium text-left uppercase hidden md:table-cell">Categoria</th>
-                    <th class="px-5 py-3 text-xs font-medium text-right uppercase">Valor</th>
+                    <th class="px-5 py-3 text-xs font-medium text-left uppercase">
+                        <div class="flex items-center space-x-1">
+                            <i data-lucide="file-text" class="w-3.5 h-3.5"></i><span>Descrição</span>
+                        </div>
+                    </th>
+                    <th class="px-5 py-3 text-xs font-medium text-left uppercase hidden sm:table-cell">
+                        <div class="flex items-center space-x-1">
+                            <i data-lucide="repeat" class="w-3.5 h-3.5"></i><span>Frequência</span>
+                        </div>
+                    </th>
+                    <th class="px-5 py-3 text-xs font-medium text-left uppercase">
+                        <div class="flex items-center space-x-1">
+                            <i data-lucide="calendar" class="w-3.5 h-3.5"></i><span>Próxima Ocorrência</span>
+                        </div>
+                    </th>
+                    <th class="px-5 py-3 text-xs font-medium text-left uppercase hidden md:table-cell">
+                        <div class="flex items-center space-x-1">
+                            <i data-lucide="tag" class="w-3.5 h-3.5"></i><span>Categoria</span>
+                        </div>
+                    </th>
+                    <th class="px-5 py-3 text-xs font-medium text-right uppercase">
+                        <div class="flex items-center justify-end space-x-1">
+                            <i data-lucide="dollar-sign" class="w-3.5 h-3.5"></i><span>Valor</span>
+                        </div>
+                    </th>
                     <th class="px-5 py-3 text-xs font-medium text-center uppercase hidden sm:table-cell">Status</th>
                     <th class="px-5 py-3 text-xs font-medium text-center uppercase">Ações</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-neutral-200">
-                {% for rec in object_list %}
+                {% for rec in page_obj %}
                 <tr class="hover:bg-gray-50 transition-colors {% if not rec.ativa %}opacity-60{% endif %}">
                     <td class="px-5 py-3">
                         <div class="flex items-center space-x-2">
@@ -351,13 +371,13 @@ function recorrenteModal() {
     {% include "includes/pagination.html" %}
 </div>
 
-{% elif has_filters %}
-<div class="flex-1 flex items-center justify-center">
-    {% include "includes/empty_state.html" with icon="search-x" title="Nenhuma recorrência encontrada" subtitle="Tente ajustar os filtros para ver mais resultados." %}
-</div>
 {% else %}
 <div class="flex-1 flex items-center justify-center">
+    {% if has_filters %}
+    {% include "includes/empty_state.html" with icon="search-x" title="Nenhuma recorrência encontrada" subtitle="Tente ajustar os filtros para ver mais resultados." %}
+    {% else %}
     {% include "includes/empty_state.html" with icon="repeat" title="Nenhuma recorrência cadastrada" subtitle="Cadastre salário, aluguel e assinaturas para gerar lançamentos automaticamente." %}
+    {% endif %}
 </div>
 {% endif %}
 
