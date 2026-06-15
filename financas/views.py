@@ -1,5 +1,6 @@
 import csv
 import decimal
+from datetime import timedelta
 
 import requests as http_requests
 from django.conf import settings
@@ -320,17 +321,33 @@ class CartaoCreditoListView(BaseCartaoCreditoView, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         hoje = timezone.localdate()
-        transacoes_mes = Transacao.objects.filter(
-            usuario=self.request.user,
-            tipo='DESPESA',
-            data__year=hoje.year,
-            data__month=hoje.month,
-        )
+
+        gastos_mes = {
+            g['cartao_credito_id']: g['total']
+            for g in Transacao.objects.filter(
+                usuario=self.request.user,
+                tipo='DESPESA',
+                data__year=hoje.year,
+                data__month=hoje.month,
+                cartao_credito__isnull=False,
+            ).values('cartao_credito_id').annotate(total=Sum('valor'))
+        }
+
         for cartao in context['object_list']:
-            cartao.gasto_mes = transacoes_mes.filter(
-                cartao_credito=cartao).aggregate(Sum('valor'))['valor__sum'] or decimal.Decimal('0')
-            cartao.percentual_limite = min(
-                int(cartao.gasto_mes / cartao.limite * 100), 100) if cartao.limite else 0
+            cartao.gasto_mes = gastos_mes.get(cartao.pk, decimal.Decimal('0'))
+            cartao.percentual_limite = (
+                int(cartao.gasto_mes / cartao.limite * 100) if cartao.limite else 0
+            )
+
+        all_cartoes = list(context['page_obj'].paginator.object_list)
+        total_limite = sum((c.limite or decimal.Decimal('0')) for c in all_cartoes)
+        total_gasto = sum(gastos_mes.get(c.pk, decimal.Decimal('0')) for c in all_cartoes)
+        context['stats'] = {
+            'total_cartoes': len(all_cartoes),
+            'total_limite': total_limite,
+            'total_gasto': total_gasto,
+            'total_disponivel': max(total_limite - total_gasto, decimal.Decimal('0')),
+        }
         return context
 
 
@@ -471,6 +488,14 @@ class BaseOrcamentoView(LoginRequiredMixin):
 
 class OrcamentoListView(BaseOrcamentoView, ListView):
     template_name = 'financas/orcamento_list.html'
+    paginate_by = 10
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        q = self.request.GET.get('q', '').strip()
+        if q:
+            qs = qs.filter(categoria__nome__icontains=q)
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -483,23 +508,50 @@ class OrcamentoListView(BaseOrcamentoView, ListView):
         except (ValueError, TypeError):
             ano, mes = hoje.year, hoje.month
 
-        transacoes_mes = Transacao.objects.filter(
-            usuario=self.request.user,
-            tipo='DESPESA',
-            data__year=ano,
-            data__month=mes,
-        )
-        for o in context['object_list']:
-            o.gasto_mes = transacoes_mes.filter(categoria=o.categoria).aggregate(
-                Sum('valor'))['valor__sum'] or decimal.Decimal('0')
-            o.disponivel = max(o.valor_mensal - o.gasto_mes, decimal.Decimal('0'))
-            o.percentual = min(int(o.gasto_mes / o.valor_mensal * 100), 100) if o.valor_mensal else 0
+        gastos_mes = {
+            g['categoria_id']: g['total']
+            for g in Transacao.objects.filter(
+                usuario=self.request.user,
+                tipo='DESPESA',
+                data__year=ano,
+                data__month=mes,
+            ).values('categoria_id').annotate(total=Sum('valor'))
+        }
 
-        context['mes'] = mes
-        context['ano'] = ano
-        context['meses_lista'] = MESES
-        context['anos_lista'] = list(range(2023, hoje.year + 1))
-        context['categorias_modal'] = Categoria.objects.filter(usuario=self.request.user).order_by('nome')
+        for o in context['object_list']:
+            o.gasto_mes = gastos_mes.get(o.categoria_id, decimal.Decimal('0'))
+            o.disponivel = max(o.valor_mensal - o.gasto_mes, decimal.Decimal('0'))
+            o.percentual = int(o.gasto_mes / o.valor_mensal * 100) if o.valor_mensal else 0
+
+        all_limits = dict(
+            context['page_obj'].paginator.object_list.values_list('categoria_id', 'valor_mensal')
+        )
+        total_orcado = sum(all_limits.values(), decimal.Decimal('0'))
+        total_gasto = sum(gastos_mes.get(cat_id, decimal.Decimal('0')) for cat_id in all_limits)
+        excedidos = sum(
+            1 for cat_id, limite in all_limits.items()
+            if gastos_mes.get(cat_id, decimal.Decimal('0')) > limite
+        )
+
+        q = self.request.GET.get('q', '').strip()
+        context.update({
+            'stats': {
+                'total_orcado': total_orcado,
+                'total_gasto': total_gasto,
+                'excedidos': excedidos,
+                'percentual_total': int(total_gasto / total_orcado * 100) if total_orcado else 0,
+            },
+            'filtros': {'q': q},
+            'total_count': Orcamento.objects.filter(usuario=self.request.user).count(),
+            'used_categoria_ids': list(
+                Orcamento.objects.filter(usuario=self.request.user).values_list('categoria_id', flat=True)
+            ),
+            'mes': mes,
+            'ano': ano,
+            'meses_lista': MESES,
+            'anos_lista': list(range(hoje.year, 2022, -1)),
+            'categorias_modal': Categoria.objects.filter(usuario=self.request.user).order_by('nome'),
+        })
         return context
 
 
@@ -634,7 +686,6 @@ class TransacaoRecorrenteListView(BaseTransacaoRecorrenteView, ListView):
         return qs
 
     def get_context_data(self, **kwargs):
-        from datetime import timedelta
         context = super().get_context_data(**kwargs)
         filtros = {k: self.request.GET.get(k, '') for k in ['q', 'tipo', 'frequencia', 'ativa']}
         hoje = timezone.now().date()

@@ -1,16 +1,32 @@
 {% extends "base.html" %}
 {% load financas_extras %}
-{% block title %}Meus Cartões - Ordo Finance{% endblock %}
+{% block title %}Cartões de Crédito - Ordo Finance{% endblock %}
 {% block content %}
 
 <script>
 function cartaoModal() {
+    const CORES = [
+        { value: 'BLUE',   label: 'Azul' },
+        { value: 'GREEN',  label: 'Verde' },
+        { value: 'RED',    label: 'Vermelho' },
+        { value: 'PURPLE', label: 'Roxo' },
+        { value: 'ORANGE', label: 'Laranja' },
+        { value: 'GRAY',   label: 'Cinza' },
+        { value: 'BLACK',  label: 'Preto' },
+    ];
     return {
         show: false, url: '', name: '',
         formOpen: false, formMode: 'create',
         formAction: '', formNome: '', formCor: 'BLUE',
         formLimite: '', formDiaFechamento: '', formDiaVencimento: '',
         errors: {}, submitting: false,
+        cores: CORES,
+
+        get previewLimite() {
+            const v = parseFloat(this.formLimite);
+            if (!v || isNaN(v)) return '—';
+            return v.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+        },
 
         openCreate(url) {
             this.formMode = 'create'; this.formAction = url;
@@ -48,8 +64,8 @@ function cartaoModal() {
 <!-- Header -->
 <div class="flex-none flex flex-wrap justify-between items-center gap-3 mb-4 animate-fade-in">
     <div>
-        <h1 class="text-xl font-bold text-dark-800">Meus Cartões de Crédito</h1>
-        <p class="text-dark-500 text-sm">Gerencie seus cartões e acompanhe o uso do limite</p>
+        <h1 class="text-xl font-bold text-dark-800">Cartões de Crédito</h1>
+        <p class="text-dark-500 text-sm">Acompanhe limites, vencimentos e uso mensal</p>
     </div>
     <button @click="openCreate('{% url 'cartao_credito_create' %}')"
         class="group inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium tracking-wide text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors duration-150 shadow-sm">
@@ -59,84 +75,126 @@ function cartaoModal() {
 </div>
 
 {% if object_list %}
+
+<!-- Stats strip -->
+<div class="flex-none grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 animate-fade-in">
+    <div class="bg-white border border-neutral-200 rounded-xl px-4 py-3 shadow-sm flex items-center space-x-3">
+        <div class="w-8 h-8 bg-primary-50 rounded-lg flex items-center justify-center flex-shrink-0">
+            <i data-lucide="credit-card" class="w-4 h-4 text-primary-600"></i>
+        </div>
+        <div class="min-w-0">
+            <p class="text-xs text-neutral-500">Cartões</p>
+            <p class="text-sm font-bold text-dark-800">{{ stats.total_cartoes }}</p>
+        </div>
+    </div>
+    <div class="bg-white border border-neutral-200 rounded-xl px-4 py-3 shadow-sm flex items-center space-x-3">
+        <div class="w-8 h-8 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0">
+            <i data-lucide="shield" class="w-4 h-4 text-neutral-500"></i>
+        </div>
+        <div class="min-w-0">
+            <p class="text-xs text-neutral-500">Limite Total</p>
+            <p class="text-sm font-bold text-dark-800 truncate">R$ {{ stats.total_limite|brl }}</p>
+        </div>
+    </div>
+    <div class="bg-white border border-neutral-200 rounded-xl px-4 py-3 shadow-sm flex items-center space-x-3">
+        <div class="w-8 h-8 bg-red-50 rounded-lg flex items-center justify-center flex-shrink-0">
+            <i data-lucide="arrow-up-right" class="w-4 h-4 text-red-500"></i>
+        </div>
+        <div class="min-w-0">
+            <p class="text-xs text-neutral-500">Gasto este Mês</p>
+            <p class="text-sm font-bold text-red-600 truncate">R$ {{ stats.total_gasto|brl }}</p>
+        </div>
+    </div>
+    <div class="bg-white border border-neutral-200 rounded-xl px-4 py-3 shadow-sm flex items-center space-x-3">
+        <div class="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center flex-shrink-0">
+            <i data-lucide="wallet" class="w-4 h-4 text-green-600"></i>
+        </div>
+        <div class="min-w-0">
+            <p class="text-xs text-neutral-500">Disponível</p>
+            <p class="text-sm font-bold text-green-600 truncate">R$ {{ stats.total_disponivel|brl }}</p>
+        </div>
+    </div>
+</div>
+
+<!-- Grid de cartões -->
 <div class="flex-1 min-h-0 overflow-y-auto">
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pb-2 animate-slide-up">
         {% for cartao in object_list %}
-        <div class="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-150 cursor-pointer select-none"
+        <div class="group bg-white rounded-2xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow duration-200 cursor-pointer"
              @click="window.location='{% url 'fatura_cartao' cartao.pk %}'">
 
-            <!-- Visual do cartão -->
-            <div class="card-gradient-{{ cartao.cor|lower }} text-white p-5 flex flex-col justify-between relative overflow-hidden" style="aspect-ratio:1.6">
-                <div class="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full"></div>
-                <div class="absolute -bottom-6 -left-6 w-20 h-20 bg-white/5 rounded-full"></div>
-                <div class="flex justify-between items-start relative z-10">
-                    <h3 class="font-bold text-base leading-tight">{{ cartao.nome }}</h3>
-                    <div class="w-8 h-6 rounded bg-gradient-to-br from-yellow-300 to-yellow-500 flex flex-col justify-around px-1 py-1 gap-0.5">
-                        <div class="w-full h-px bg-yellow-800/40 rounded"></div>
-                        <div class="w-full h-px bg-yellow-800/40 rounded"></div>
-                        <div class="w-full h-px bg-yellow-800/40 rounded"></div>
+            <!-- Nome + ícone colorido + ações -->
+            <div class="flex items-start justify-between gap-3 mb-4">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="card-gradient-{{ cartao.cor|lower }} w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <i data-lucide="credit-card" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h3 class="font-semibold text-dark-800 text-sm leading-tight truncate">{{ cartao.nome }}</h3>
+                        <p class="text-xs text-neutral-400 mt-0.5">Limite R$ {{ cartao.limite|brl }}</p>
                     </div>
                 </div>
-                <div class="relative z-10 flex justify-between items-end">
-                    <p class="text-sm font-mono tracking-widest opacity-60">•••• •••• •••• ••••</p>
-                    <span class="text-xs font-semibold opacity-60 tracking-wide">ORDO</span>
-                </div>
-            </div>
-
-            <!-- Info -->
-            <div class="p-4">
-                <div class="grid grid-cols-3 gap-3 text-center mb-3">
-                    <div>
-                        <p class="text-xs text-dark-500 mb-0.5">Limite</p>
-                        <p class="font-bold text-dark-800 text-sm">R$ {{ cartao.limite|brl }}</p>
-                    </div>
-                    <div>
-                        <p class="text-xs text-dark-500 mb-0.5">Fechamento</p>
-                        <p class="font-bold text-dark-800 text-sm">Dia {{ cartao.dia_fechamento }}</p>
-                    </div>
-                    <div>
-                        <p class="text-xs text-dark-500 mb-0.5">Vencimento</p>
-                        <p class="font-bold text-dark-800 text-sm">Dia {{ cartao.dia_vencimento }}</p>
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <div class="flex justify-between items-center mb-1">
-                        <p class="text-xs text-neutral-500">Usado este mês</p>
-                        <p class="text-xs font-semibold {% if cartao.percentual_limite >= 90 %}text-red-600{% elif cartao.percentual_limite >= 70 %}text-amber-600{% else %}text-neutral-600{% endif %}">
-                            R$ {{ cartao.gasto_mes|brl }} ({{ cartao.percentual_limite }}%)
-                        </p>
-                    </div>
-                    <div class="w-full bg-gray-100 rounded-full h-1.5">
-                        <div class="h-1.5 rounded-full transition-all duration-300
-                            {% if cartao.percentual_limite >= 90 %}bg-red-500{% elif cartao.percentual_limite >= 70 %}bg-amber-400{% else %}bg-green-500{% endif %}"
-                            style="width: {{ cartao.percentual_limite }}%"></div>
-                    </div>
-                </div>
-
-                <div class="flex space-x-2">
+                <div class="flex items-center gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
                     <button @click.stop="openEdit('{% url 'cartao_credito_update' cartao.pk %}', '{{ cartao.nome|escapejs }}', '{{ cartao.cor }}', '{{ cartao.limite }}', '{{ cartao.dia_fechamento }}', '{{ cartao.dia_vencimento }}')"
-                        class="flex-1 inline-flex items-center justify-center space-x-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-medium py-2 rounded-lg transition-colors duration-150 text-sm">
+                        class="p-1.5 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded-md transition-colors duration-150" title="Editar">
                         <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
-                        <span>Editar</span>
                     </button>
                     <button @click.stop="url = '{% url 'cartao_credito_delete' cartao.pk %}'; name = '{{ cartao.nome|escapejs }}'; show = true"
-                        class="flex-1 inline-flex items-center justify-center space-x-1.5 px-3 py-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-150 text-sm">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                        <span>Remover</span>
+                        class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors duration-150" title="Remover">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                     </button>
                 </div>
             </div>
+
+            <!-- Fechamento / Vencimento -->
+            <div class="flex items-center gap-4 mb-4 pt-3 border-t border-neutral-100">
+                <div>
+                    <p class="text-xs text-neutral-400">Fechamento</p>
+                    <p class="text-xs font-semibold text-dark-700 mt-0.5">Dia {{ cartao.dia_fechamento }}</p>
+                </div>
+                <div class="w-px h-6 bg-neutral-100 flex-shrink-0"></div>
+                <div>
+                    <p class="text-xs text-neutral-400">Vencimento</p>
+                    <p class="text-xs font-semibold text-dark-700 mt-0.5">Dia {{ cartao.dia_vencimento }}</p>
+                </div>
+            </div>
+
+            <!-- Barra de uso -->
+            <div>
+                <div class="flex justify-between items-center mb-1.5">
+                    <span class="text-xs text-neutral-400">Usado este mês</span>
+                    <span class="text-xs font-semibold {% if cartao.percentual_limite >= 100 %}text-red-600{% elif cartao.percentual_limite >= 70 %}text-amber-600{% else %}text-neutral-600{% endif %}">
+                        R$ {{ cartao.gasto_mes|brl }}
+                        {% if cartao.percentual_limite > 100 %}
+                        · <span class="text-red-500">Excedido</span>
+                        {% else %}
+                        ({{ cartao.percentual_limite }}%)
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="w-full bg-gray-100 rounded-full h-1.5">
+                    <div class="h-1.5 rounded-full transition-all duration-300
+                        {% if cartao.percentual_limite >= 100 %}bg-red-500{% elif cartao.percentual_limite >= 70 %}bg-amber-400{% else %}bg-green-500{% endif %}"
+                        style="width: {% if cartao.percentual_limite > 100 %}100{% else %}{{ cartao.percentual_limite }}{% endif %}%"></div>
+                </div>
+            </div>
+
+            <!-- Link fatura -->
+            <div class="mt-3 flex justify-end">
+                <span class="inline-flex items-center gap-1 text-xs font-medium text-primary-600 group-hover:text-primary-700 transition-colors duration-150">
+                    Ver fatura
+                    <i data-lucide="arrow-right" class="w-3 h-3 group-hover:translate-x-0.5 transition-transform duration-150"></i>
+                </span>
+            </div>
+
         </div>
         {% endfor %}
     </div>
 </div>
 
-{% if page_obj.has_other_pages %}
-<div class="flex-none mt-4 bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
+<div class="flex-none mt-3 bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
     {% include "includes/pagination.html" %}
 </div>
-{% endif %}
 
 {% else %}
 <div class="flex-1 flex items-center justify-center">
@@ -161,6 +219,21 @@ function cartaoModal() {
             <form :action="formAction" method="post" @submit.prevent="submitForm($el)" class="p-5 space-y-4">
                 {% csrf_token %}
                 {% include "includes/modal_errors.html" %}
+
+                <!-- Preview ao vivo -->
+                <div class="rounded-xl border border-neutral-200 bg-neutral-50 p-3 flex items-center gap-3">
+                    <div :class="`card-gradient-${formCor.toLowerCase()}`"
+                         class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm transition-all duration-200">
+                        <i data-lucide="credit-card" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold text-dark-800 truncate" x-text="formNome || 'Nome do cartão'"></p>
+                        <p class="text-xs text-neutral-400 mt-0.5">
+                            Limite R$ <span x-text="previewLimite"></span>
+                        </p>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label class="flex items-center space-x-2 text-dark-700 font-medium mb-1.5 text-sm">
                         <i data-lucide="credit-card" class="w-4 h-4"></i>
@@ -173,34 +246,27 @@ function cartaoModal() {
                         </template>
                     </template>
                 </div>
+
                 <div class="form-group">
                     <label class="flex items-center space-x-2 text-dark-700 font-medium mb-1.5 text-sm">
                         <i data-lucide="palette" class="w-4 h-4"></i>
                         <span>Cor</span>
                     </label>
-                    <div x-data="{ open: false }" @click.outside="open=false">
-                        <button type="button" @click="open=!open"
-                            class="w-full flex items-center justify-between px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm text-dark-700 text-left">
-                            <span x-text="{ BLUE:'Azul', GREEN:'Verde', RED:'Vermelho', PURPLE:'Roxo', BLACK:'Preto', ORANGE:'Laranja', GRAY:'Cinza' }[formCor] ?? formCor"></span>
-                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 flex-shrink-0"></i>
-                        </button>
-                        <input type="hidden" name="cor" x-model="formCor">
-                        <div x-show="open" x-transition class="mt-1 border border-gray-200 rounded-lg bg-white shadow-sm max-h-48 overflow-y-auto">
-                            <button type="button" @click="formCor='BLUE'; open=false" :class="formCor==='BLUE' ? 'font-semibold text-primary-600' : ''" class="w-full text-left px-3 py-1.5 text-sm hover:bg-neutral-50">Azul</button>
-                            <button type="button" @click="formCor='GREEN'; open=false" :class="formCor==='GREEN' ? 'font-semibold text-primary-600' : ''" class="w-full text-left px-3 py-1.5 text-sm hover:bg-neutral-50">Verde</button>
-                            <button type="button" @click="formCor='RED'; open=false" :class="formCor==='RED' ? 'font-semibold text-primary-600' : ''" class="w-full text-left px-3 py-1.5 text-sm hover:bg-neutral-50">Vermelho</button>
-                            <button type="button" @click="formCor='PURPLE'; open=false" :class="formCor==='PURPLE' ? 'font-semibold text-primary-600' : ''" class="w-full text-left px-3 py-1.5 text-sm hover:bg-neutral-50">Roxo</button>
-                            <button type="button" @click="formCor='BLACK'; open=false" :class="formCor==='BLACK' ? 'font-semibold text-primary-600' : ''" class="w-full text-left px-3 py-1.5 text-sm hover:bg-neutral-50">Preto</button>
-                            <button type="button" @click="formCor='ORANGE'; open=false" :class="formCor==='ORANGE' ? 'font-semibold text-primary-600' : ''" class="w-full text-left px-3 py-1.5 text-sm hover:bg-neutral-50">Laranja</button>
-                            <button type="button" @click="formCor='GRAY'; open=false" :class="formCor==='GRAY' ? 'font-semibold text-primary-600' : ''" class="w-full text-left px-3 py-1.5 text-sm hover:bg-neutral-50">Cinza</button>
-                        </div>
+                    <div class="flex items-center gap-2.5 flex-wrap">
+                        <template x-for="cor in cores" :key="cor.value">
+                            <button type="button" @click="formCor = cor.value" :title="cor.label"
+                                :class="[`card-gradient-${cor.value.toLowerCase()}`, formCor === cor.value ? 'ring-2 ring-offset-2 ring-primary-500 scale-110' : 'opacity-50 hover:opacity-90 hover:scale-105']"
+                                class="w-8 h-8 rounded-lg transition-all duration-150 flex-shrink-0"></button>
+                        </template>
                     </div>
+                    <input type="hidden" name="cor" x-model="formCor">
                     <template x-if="errors.cor">
                         <template x-for="e in (errors.cor || [])" :key="e">
                             <p class="text-red-600 text-xs mt-1" x-text="e"></p>
                         </template>
                     </template>
                 </div>
+
                 <div class="form-group">
                     <label class="flex items-center space-x-2 text-dark-700 font-medium mb-1.5 text-sm">
                         <i data-lucide="dollar-sign" class="w-4 h-4"></i>
@@ -216,6 +282,7 @@ function cartaoModal() {
                         </template>
                     </template>
                 </div>
+
                 <div class="grid grid-cols-2 gap-4">
                     <div class="form-group">
                         <label class="flex items-center space-x-2 text-dark-700 font-medium mb-1.5 text-sm">
@@ -242,6 +309,7 @@ function cartaoModal() {
                         </template>
                     </div>
                 </div>
+
                 {% include "includes/modal_footer.html" %}
             </form>
         </div>

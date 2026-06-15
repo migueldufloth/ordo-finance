@@ -4,9 +4,19 @@
 {% block content %}
 
 <script>
+function filterDropdown(inputId) {
+    return {
+        open: false,
+        pick(v) {
+            document.getElementById(inputId).value = v;
+            document.getElementById('filter-form').submit();
+        }
+    };
+}
+
 function orcamentoModal() {
     const allCats = [{% for cat in categorias_modal %}{"id": {{ cat.pk }}, "name": "{{ cat.nome|escapejs }}"},{% endfor %}];
-    const usedIds = new Set([{% for orc in object_list %}{{ orc.categoria_id }},{% endfor %}]);
+    const usedIds = new Set([{% for id in used_categoria_ids %}{{ id }},{% endfor %}]);
 
     return {
         show: false, url: '', name: '',
@@ -54,80 +64,154 @@ function orcamentoModal() {
 
 <div x-data="orcamentoModal()" class="h-full flex flex-col">
 
+<!-- Header -->
 <div class="flex-none flex flex-wrap justify-between items-center gap-3 mb-4 animate-fade-in">
     <div>
         <h1 class="text-xl font-bold text-dark-800">Orçamentos</h1>
         <p class="text-dark-500 text-sm">Defina limites mensais por categoria</p>
     </div>
-    <div class="flex items-center gap-2 flex-wrap">
-        {% if object_list %}
-        <form id="periodo-form" method="get" class="flex items-center gap-2">
+    <button @click="openCreate('{% url 'orcamento_create' %}')"
+        class="group inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium tracking-wide text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors duration-150 shadow-sm">
+        <i data-lucide="plus" class="w-4 h-4 group-hover:rotate-90 transition-transform duration-150"></i>
+        <span>Novo Orçamento</span>
+    </button>
+</div>
+
+<!-- Filtros -->
+<form id="filter-form" method="get" action="" class="flex-none mb-4 animate-fade-in">
+    <div class="bg-white border border-neutral-200 rounded-xl shadow-sm p-3">
+        <div class="flex flex-wrap gap-2 items-end">
+
+            <!-- Buscar -->
+            <div class="flex-1 min-w-[180px]">
+                <label class="block text-xs font-medium text-neutral-500 mb-1">Buscar</label>
+                <div class="relative flex items-center">
+                    <i data-lucide="search" class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-500 pointer-events-none"></i>
+                    <input type="text" name="q" value="{{ filtros.q }}" placeholder="Nome da categoria…"
+                           class="w-full pl-8 pr-[4.5rem] py-1.5 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300">
+                    <button type="submit"
+                        class="absolute right-1.5 top-1/2 -translate-y-1/2 px-2 py-0.5 text-xs font-semibold text-white bg-primary-500 hover:bg-primary-600 rounded-md transition-colors duration-150">
+                        Buscar
+                    </button>
+                </div>
+            </div>
+
             <!-- Mês -->
-            <div x-data="{
-                open: false,
-                pick(v) { document.getElementById('periodo-mes').value = v; document.getElementById('periodo-form').submit(); }
-            }" class="relative">
+            <div x-data="filterDropdown('input-mes')" class="relative min-w-[120px]">
+                <label class="block text-xs font-medium text-neutral-500 mb-1">Mês</label>
                 <button type="button" @click="open=!open" @click.outside="open=false"
-                    class="flex items-center gap-1 px-2 py-1.5 text-sm border border-neutral-200 rounded-lg bg-white">
-                    <span>{% for num, nome in meses_lista %}{% if num == mes %}{{ nome }}{% endif %}{% endfor %}</span>
+                    class="w-full flex items-center justify-between gap-1 px-2 py-1.5 text-sm border border-neutral-200 rounded-lg bg-white text-left">
+                    <span class="truncate">{% for num, nome in meses_lista %}{% if num == mes %}{{ nome }}{% endif %}{% endfor %}</span>
                     <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-neutral-400 flex-shrink-0"></i>
                 </button>
                 <div x-show="open" x-transition
-                     class="absolute top-full right-0 mt-1 min-w-full bg-white border border-neutral-200 rounded-xl shadow-lg z-30 py-1 max-h-48 overflow-y-auto">
+                     class="absolute top-full left-0 mt-1 min-w-full bg-white border border-neutral-200 rounded-xl shadow-lg z-30 py-1 max-h-48 overflow-y-auto">
                     {% for num, nome in meses_lista %}
                     <button type="button" @click="pick('{{ num }}')"
                         class="w-full text-left px-3 py-1.5 text-sm hover:bg-neutral-50 {% if num == mes %}font-semibold text-primary-600{% endif %}">{{ nome }}</button>
                     {% endfor %}
                 </div>
             </div>
+            <input type="hidden" id="input-mes" name="mes" value="{{ mes }}">
+
             <!-- Ano -->
-            <div x-data="{
-                open: false,
-                pick(v) { document.getElementById('periodo-ano').value = v; document.getElementById('periodo-form').submit(); }
-            }" class="relative">
+            <div x-data="filterDropdown('input-ano')" class="relative min-w-[90px]">
+                <label class="block text-xs font-medium text-neutral-500 mb-1">Ano</label>
                 <button type="button" @click="open=!open" @click.outside="open=false"
-                    class="flex items-center gap-1 px-2 py-1.5 text-sm border border-neutral-200 rounded-lg bg-white">
-                    <span>{{ ano }}</span>
+                    class="w-full flex items-center justify-between gap-1 px-2 py-1.5 text-sm border border-neutral-200 rounded-lg bg-white text-left">
+                    <span class="truncate">{{ ano }}</span>
                     <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-neutral-400 flex-shrink-0"></i>
                 </button>
                 <div x-show="open" x-transition
-                     class="absolute top-full right-0 mt-1 min-w-full bg-white border border-neutral-200 rounded-xl shadow-lg z-30 py-1 max-h-48 overflow-y-auto">
+                     class="absolute top-full left-0 mt-1 min-w-full bg-white border border-neutral-200 rounded-xl shadow-lg z-30 py-1 max-h-48 overflow-y-auto">
                     {% for a in anos_lista %}
                     <button type="button" @click="pick('{{ a }}')"
                         class="w-full text-left px-3 py-1.5 text-sm hover:bg-neutral-50 {% if a == ano %}font-semibold text-primary-600{% endif %}">{{ a }}</button>
                     {% endfor %}
                 </div>
             </div>
-            <input type="hidden" id="periodo-mes" name="mes" value="{{ mes }}">
-            <input type="hidden" id="periodo-ano" name="ano" value="{{ ano }}">
-        </form>
-        {% endif %}
-        <button @click="openCreate('{% url 'orcamento_create' %}')"
-            class="group inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium tracking-wide text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors duration-150 shadow-sm">
-            <i data-lucide="plus" class="w-4 h-4 group-hover:rotate-90 transition-transform duration-150"></i>
-            <span>Novo Orçamento</span>
-        </button>
+            <input type="hidden" id="input-ano" name="ano" value="{{ ano }}">
+
+        </div>
+    </div>
+</form>
+
+<!-- Stats strip -->
+{% if page_obj.object_list %}
+<div class="flex-none grid grid-cols-3 gap-3 mb-3 animate-fade-in">
+    <div class="bg-white border border-neutral-200 rounded-xl px-4 py-3 shadow-sm flex items-center space-x-3">
+        <div class="w-8 h-8 bg-primary-50 rounded-lg flex items-center justify-center flex-shrink-0">
+            <i data-lucide="target" class="w-4 h-4 text-primary-600"></i>
+        </div>
+        <div class="min-w-0">
+            <p class="text-xs text-neutral-500">Total Orçado</p>
+            <p class="text-sm font-bold text-primary-600 truncate">R$ {{ stats.total_orcado|brl }}</p>
+        </div>
+    </div>
+    <div class="bg-white border border-neutral-200 rounded-xl px-4 py-3 shadow-sm flex items-center space-x-3">
+        <div class="w-8 h-8 {% if stats.percentual_total >= 100 %}bg-red-100{% elif stats.percentual_total >= 70 %}bg-amber-100{% else %}bg-green-100{% endif %} rounded-lg flex items-center justify-center flex-shrink-0">
+            <i data-lucide="arrow-up-right" class="w-4 h-4 {% if stats.percentual_total >= 100 %}text-red-600{% elif stats.percentual_total >= 70 %}text-amber-600{% else %}text-green-600{% endif %}"></i>
+        </div>
+        <div class="min-w-0">
+            <p class="text-xs text-neutral-500">Gasto no Mês</p>
+            <p class="text-sm font-bold {% if stats.percentual_total >= 100 %}text-red-600{% elif stats.percentual_total >= 70 %}text-amber-600{% else %}text-green-600{% endif %} truncate">R$ {{ stats.total_gasto|brl }}</p>
+        </div>
+    </div>
+    <div class="bg-white border border-neutral-200 rounded-xl px-4 py-3 shadow-sm flex items-center space-x-3">
+        <div class="w-8 h-8 {% if stats.excedidos > 0 %}bg-red-100{% else %}bg-green-100{% endif %} rounded-lg flex items-center justify-center flex-shrink-0">
+            <i data-lucide="{% if stats.excedidos > 0 %}alert-triangle{% else %}check-circle{% endif %}" class="w-4 h-4 {% if stats.excedidos > 0 %}text-red-600{% else %}text-green-600{% endif %}"></i>
+        </div>
+        <div class="min-w-0">
+            <p class="text-xs text-neutral-500">Excedidos</p>
+            <p class="text-sm font-bold {% if stats.excedidos > 0 %}text-red-600{% else %}text-green-600{% endif %}">{{ stats.excedidos }}</p>
+        </div>
     </div>
 </div>
+{% endif %}
 
-{% if object_list %}
+
+{% if page_obj.object_list %}
 <div class="flex-1 min-h-0 flex flex-col bg-white rounded-2xl shadow-md border border-gray-100 animate-slide-up overflow-hidden">
     <div class="flex-1 min-h-0 overflow-y-auto overflow-x-auto">
         <table class="min-w-full divide-y divide-neutral-200">
             <thead class="bg-gray-50 sticky top-0 z-10">
                 <tr class="text-neutral-500">
-                    <th class="px-5 py-3 text-xs font-medium text-left uppercase">Categoria</th>
-                    <th class="px-5 py-3 text-xs font-medium text-right uppercase">Limite Mensal</th>
-                    <th class="px-5 py-3 text-xs font-medium text-right uppercase">Gasto no Mês</th>
-                    <th class="px-5 py-3 text-xs font-medium text-right uppercase">Disponível</th>
-                    <th class="px-5 py-3 text-xs font-medium text-left uppercase">Progresso</th>
-                    <th class="px-5 py-3 text-xs font-medium text-center uppercase">Ações</th>
+                    <th class="px-5 py-3 text-xs font-medium text-left uppercase">
+                        <div class="flex items-center space-x-1">
+                            <i data-lucide="folder" class="w-3.5 h-3.5"></i><span>Categoria</span>
+                        </div>
+                    </th>
+                    <th class="px-5 py-3 text-xs font-medium text-right uppercase">
+                        <div class="flex items-center justify-end space-x-1">
+                            <i data-lucide="target" class="w-3.5 h-3.5"></i><span>Limite Mensal</span>
+                        </div>
+                    </th>
+                    <th class="px-5 py-3 text-xs font-medium text-right uppercase">
+                        <div class="flex items-center justify-end space-x-1">
+                            <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i><span>Gasto no Mês</span>
+                        </div>
+                    </th>
+                    <th class="px-5 py-3 text-xs font-medium text-right uppercase">
+                        <div class="flex items-center justify-end space-x-1">
+                            <i data-lucide="wallet" class="w-3.5 h-3.5"></i><span>Disponível</span>
+                        </div>
+                    </th>
+                    <th class="px-5 py-3 text-xs font-medium text-left uppercase">
+                        <div class="flex items-center space-x-1">
+                            <i data-lucide="bar-chart-2" class="w-3.5 h-3.5"></i><span>Progresso</span>
+                        </div>
+                    </th>
+                    <th class="px-5 py-3 text-xs font-medium text-center uppercase">
+                        <div class="flex items-center justify-center space-x-1">
+                            <i data-lucide="settings-2" class="w-3.5 h-3.5"></i><span>Ações</span>
+                        </div>
+                    </th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-neutral-200">
                 {% for orcamento in object_list %}
                 <tr class="hover:bg-gray-50 transition-colors">
-                    <td class="px-5 py-4">
+                    <td class="px-5 py-3">
                         <div class="flex items-center space-x-2">
                             <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
                                 <i data-lucide="folder" class="w-4 h-4 text-gray-500"></i>
@@ -135,25 +219,25 @@ function orcamentoModal() {
                             <span class="text-sm font-semibold text-dark-800">{{ orcamento.categoria.nome }}</span>
                         </div>
                     </td>
-                    <td class="px-5 py-4 text-right">
+                    <td class="px-5 py-3 text-right">
                         <span class="text-sm font-semibold text-dark-800">R$ {{ orcamento.valor_mensal|brl }}</span>
                     </td>
-                    <td class="px-5 py-4 text-right">
-                        <span class="text-sm font-semibold {% if orcamento.percentual >= 90 %}text-red-600{% elif orcamento.percentual >= 70 %}text-amber-600{% else %}text-dark-800{% endif %}">
+                    <td class="px-5 py-3 text-right">
+                        <span class="text-sm font-semibold {% if orcamento.percentual >= 100 %}text-red-600{% elif orcamento.percentual >= 70 %}text-amber-600{% else %}text-dark-800{% endif %}">
                             R$ {{ orcamento.gasto_mes|brl }}
                         </span>
                     </td>
-                    <td class="px-5 py-4 text-right">
+                    <td class="px-5 py-3 text-right">
                         <span class="text-sm font-semibold {% if orcamento.disponivel == 0 %}text-red-600{% else %}text-green-600{% endif %}">
                             R$ {{ orcamento.disponivel|brl }}
                         </span>
                     </td>
-                    <td class="px-5 py-4 min-w-[140px]">
+                    <td class="px-5 py-3 min-w-[140px]">
                         <div class="flex items-center space-x-2">
                             <div class="flex-1 bg-gray-100 rounded-full h-2">
                                 <div class="h-2 rounded-full transition-all duration-300
-                                    {% if orcamento.percentual >= 90 %}bg-red-500{% elif orcamento.percentual >= 70 %}bg-amber-400{% else %}bg-green-500{% endif %}"
-                                    style="width: {{ orcamento.percentual }}%"></div>
+                                    {% if orcamento.percentual >= 100 %}bg-red-500{% elif orcamento.percentual >= 70 %}bg-amber-400{% else %}bg-green-500{% endif %}"
+                                    style="width: {% if orcamento.percentual > 100 %}100{% else %}{{ orcamento.percentual }}{% endif %}%"></div>
                             </div>
                             {% if orcamento.percentual > 100 %}
                             <span class="text-xs font-semibold text-red-600 whitespace-nowrap">Excedido</span>
@@ -162,14 +246,14 @@ function orcamentoModal() {
                             {% endif %}
                         </div>
                     </td>
-                    <td class="px-5 py-4 text-center">
+                    <td class="px-5 py-3 text-center">
                         <div class="flex items-center justify-center space-x-1">
                             <button @click="openEdit('{% url 'orcamento_update' orcamento.pk %}', {{ orcamento.categoria_id }}, '{{ orcamento.valor_mensal }}')"
-                               class="p-1.5 text-neutral-400 hover:text-neutral-800 hover:bg-neutral-100 rounded-md transition-colors" title="Editar">
+                               class="p-1.5 text-neutral-400 hover:text-neutral-800 hover:bg-neutral-100 rounded-md transition-colors duration-150" title="Editar">
                                 <i data-lucide="pencil" class="w-4 h-4"></i>
                             </button>
                             <button @click="url = '{% url 'orcamento_delete' orcamento.pk %}'; name = '{{ orcamento.categoria.nome|escapejs }}'; show = true"
-                               class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Remover">
+                               class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors duration-150" title="Remover">
                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
                             </button>
                         </div>
@@ -179,11 +263,16 @@ function orcamentoModal() {
             </tbody>
         </table>
     </div>
+    {% include "includes/pagination.html" %}
 </div>
 
 {% else %}
 <div class="flex-1 flex items-center justify-center">
+    {% if filtros.q %}
+    {% include "includes/empty_state.html" with icon="search-x" title="Nenhuma categoria encontrada" subtitle="Nenhum orçamento corresponde à busca aplicada." %}
+    {% else %}
     {% include "includes/empty_state.html" with icon="target" title="Nenhum orçamento definido" subtitle="Defina limites mensais por categoria para controlar seus gastos." %}
+    {% endif %}
 </div>
 {% endif %}
 
@@ -204,14 +293,20 @@ function orcamentoModal() {
             <form :action="formAction" method="post" @submit.prevent="submitForm($el)" class="p-5 space-y-4">
                 {% csrf_token %}
                 {% include "includes/modal_errors.html" %}
+                <template x-if="formMode === 'create' && availableCategories.length === 0">
+                    <div class="flex items-center space-x-2 py-2 px-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
+                        <i data-lucide="alert-circle" class="w-3.5 h-3.5 flex-shrink-0"></i>
+                        <span>Todas as categorias já têm orçamento definido.</span>
+                    </div>
+                </template>
                 <div class="form-group">
                     <label class="flex items-center space-x-2 text-dark-700 font-medium mb-1.5 text-sm">
                         <i data-lucide="folder" class="w-4 h-4"></i>
                         <span>Categoria</span>
                     </label>
                     <div x-data="{ open: false }" @click.outside="open=false">
-                        <button type="button" @click="open=!open"
-                            class="w-full flex items-center justify-between px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm text-dark-700 text-left">
+                        <button type="button" @click="open=!open" :disabled="formMode === 'create' && availableCategories.length === 0"
+                            class="w-full flex items-center justify-between px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm text-dark-700 text-left disabled:opacity-50 disabled:cursor-not-allowed">
                             <span x-text="formCategoria ? (availableCategories.find(c => String(c.id) === formCategoria)?.name ?? 'Selecione uma categoria') : 'Selecione uma categoria'"></span>
                             <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 flex-shrink-0"></i>
                         </button>
@@ -246,7 +341,7 @@ function orcamentoModal() {
                         </template>
                     </template>
                 </div>
-                {% include "includes/modal_footer.html" %}
+                {% include "includes/modal_footer.html" with submit_disabled="submitting || availableCategories.length === 0" %}
             </form>
         </div>
     </div>

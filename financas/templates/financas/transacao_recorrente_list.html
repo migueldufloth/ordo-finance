@@ -200,7 +200,7 @@ function recorrenteModal() {
             <i data-lucide="calendar-clock" class="w-4 h-4 text-amber-600"></i>
         </div>
         <div class="min-w-0">
-            <p class="text-xs text-neutral-500 truncate">Próx. 7 dias</p>
+            <p class="text-xs text-neutral-500 truncate">Pendentes / 7 dias</p>
             <p class="text-sm font-bold text-amber-600">{{ stats.proximas_semana }}</p>
         </div>
     </div>
@@ -281,8 +281,16 @@ function recorrenteModal() {
                             <i data-lucide="dollar-sign" class="w-3.5 h-3.5"></i><span>Valor</span>
                         </div>
                     </th>
-                    <th class="px-5 py-3 text-xs font-medium text-center uppercase hidden sm:table-cell">Status</th>
-                    <th class="px-5 py-3 text-xs font-medium text-center uppercase">Ações</th>
+                    <th class="px-5 py-3 text-xs font-medium text-left uppercase hidden sm:table-cell">
+                        <div class="flex items-center space-x-1">
+                            <i data-lucide="activity" class="w-3.5 h-3.5"></i><span>Status</span>
+                        </div>
+                    </th>
+                    <th class="px-5 py-3 text-xs font-medium text-center uppercase">
+                        <div class="flex items-center justify-center space-x-1">
+                            <i data-lucide="settings-2" class="w-3.5 h-3.5"></i><span>Ações</span>
+                        </div>
+                    </th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-neutral-200">
@@ -336,7 +344,7 @@ function recorrenteModal() {
                             R$ {{ rec.valor|brl }}
                         </span>
                     </td>
-                    <td class="px-5 py-3 text-center hidden sm:table-cell">
+                    <td class="px-5 py-3 hidden sm:table-cell">
                         {% if rec.ativa %}
                         <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-semibold bg-green-50 text-green-700 border border-green-200 rounded-full">Ativa</span>
                         {% else %}
