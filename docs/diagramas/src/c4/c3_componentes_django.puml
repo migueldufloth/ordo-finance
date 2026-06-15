@@ -9,7 +9,7 @@ Container_Boundary(web, "App Principal — Django 5 / Gunicorn") {
   Component(urlRouter, "URL Router", "Django URLconf", "ordo_project/urls.py + financas/urls.py. 24 rotas registradas.")
   Component(authMiddleware, "Auth Middleware", "django.contrib.auth", "Middleware de sessão. @login_required / LoginRequiredMixin. Redireciona para /accounts/login/ se não autenticado.")
   Component(dashboardView, "Dashboard View", "FBV — views.py", "GET /. Seletor de período. Saldo, receitas/despesas do período, gráficos Chart.js, orçamentos e uso de limite dos cartões.")
-  Component(transacaoViews, "Transação Views", "FBV — views.py", "Lista com filtros e paginação. Adicionar / Editar / Remover. Exportar PDF (fpdf2 inline) e CSV.")
+  Component(transacaoViews, "Transação Views", "FBV — views.py", "Lista com filtros e paginação. Adicionar / Editar / Remover. Exportar CSV. Geração de PDF delegada ao serviço FastAPI (api) via HTTP POST.")
   Component(cartaoViews, "Cartão Views", "CBV — views.py", "BaseCartaoCreditoView (mixin). List / Create / Update / Delete. Exibe gasto do mês e percentual do limite.")
   Component(categoriaViews, "Categoria Views", "CBV — views.py", "BaseCategoriaView (mixin). List / Create / Update / Delete.")
   Component(orcamentoViews, "Orçamento Views", "CBV — views.py", "BaseOrcamentoView (mixin). List / Create / Update / Delete. Exibe gasto vs. limite mensal por categoria.")

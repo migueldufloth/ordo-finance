@@ -11,6 +11,12 @@ class UpdateView <<Django>> { }
 class DeleteView <<Django>> { }
 class ModelForm <<Django>> { }
 
+' --- Mixin do projeto ---
+class AjaxFormMixin <<Mixin>> {
+  +form_valid(form) : JsonResponse | HttpResponse
+  +form_invalid(form) : JsonResponse | HttpResponse
+}
+
 ' --- Mixins do projeto ---
 class BaseCartaoCreditoView <<Mixin>> {
   +model : CartaoCredito
@@ -50,6 +56,8 @@ class CartaoCreditoUpdateView <<View>> {
   +form_class : CartaoCreditoForm
   +form_valid(form) : response
 }
+CartaoCreditoCreateView --|> AjaxFormMixin
+CartaoCreditoUpdateView --|> AjaxFormMixin
 class CartaoCreditoDeleteView <<View>> {
   +get_context_data(**kwargs) : dict
 }
@@ -74,6 +82,8 @@ class CategoriaUpdateView <<View>> {
   +form_class : CategoriaForm
   +form_valid(form) : response
 }
+CategoriaCreateView --|> AjaxFormMixin
+CategoriaUpdateView --|> AjaxFormMixin
 class CategoriaDeleteView <<View>> {
   +get_context_data(**kwargs) : dict
 }
@@ -88,6 +98,8 @@ CategoriaDeleteView --|> DeleteView
 
 ' --- CBVs Orçamento ---
 class OrcamentoListView <<View>> {
+  +paginate_by : int = 10
+  +get_queryset() : QuerySet
   +get_context_data(**kwargs) : dict
 }
 class OrcamentoCreateView <<View>> {
@@ -100,6 +112,8 @@ class OrcamentoUpdateView <<View>> {
   +get_form_kwargs() : dict
   +form_valid(form) : response
 }
+OrcamentoCreateView --|> AjaxFormMixin
+OrcamentoUpdateView --|> AjaxFormMixin
 class OrcamentoDeleteView <<View>> {
   +get_context_data(**kwargs) : dict
 }
@@ -113,7 +127,11 @@ OrcamentoDeleteView --|> BaseOrcamentoView
 OrcamentoDeleteView --|> DeleteView
 
 ' --- CBVs TransacaoRecorrente ---
-class TransacaoRecorrenteListView <<View>> { }
+class TransacaoRecorrenteListView <<View>> {
+  +paginate_by : int = 10
+  +get_queryset() : QuerySet
+  +get_context_data(**kwargs) : dict
+}
 class TransacaoRecorrenteCreateView <<View>> {
   +form_class : TransacaoRecorrenteForm
   +get_form_kwargs() : dict
@@ -124,6 +142,8 @@ class TransacaoRecorrenteUpdateView <<View>> {
   +get_form_kwargs() : dict
   +form_valid(form) : response
 }
+TransacaoRecorrenteCreateView --|> AjaxFormMixin
+TransacaoRecorrenteUpdateView --|> AjaxFormMixin
 class TransacaoRecorrenteDeleteView <<View>> {
   +get_context_data(**kwargs) : dict
 }

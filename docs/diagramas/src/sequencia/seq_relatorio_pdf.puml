@@ -7,7 +7,7 @@ participant "Django\nURL Router" as Router
 participant "gerar_relatorio\n(FBV — views.py)" as View
 participant "_filtrar_transacoes\n(views.py)" as Filter
 database "PostgreSQL" as DB
-participant "FPDF2\n(fpdf lib)" as PDF
+participant "FastAPI\n(api service)" as API
 
 Browser -> Router : GET /transacoes/relatorio/?[filtros]
 activate Router
@@ -23,17 +23,16 @@ deactivate DB
 Filter --> View : QuerySet
 deactivate Filter
 
-View -> PDF : FPDF() — add_page() — set_margins()
-activate PDF
-PDF -> PDF : cabeçalho (título, usuário, data geração)
-PDF -> PDF : cabeçalho da tabela\n(Data / Descrição / Categoria / Tipo / Valor)
-loop para cada transação no queryset
-  PDF -> PDF : linha da tabela (zebra fill)
-  PDF -> PDF : acumula total_receitas / total_despesas
-end
-PDF -> PDF : rodapé com totais (receitas, despesas, saldo)
-PDF --> View : bytes do PDF (pdf.output())
-deactivate PDF
+View -> View : serializa queryset para payload JSON\n{usuario, periodo, transacoes: [...]}
+
+View -> API : POST /relatorio/pdf\nContent-Type: application/json
+activate API
+
+API -> API : _pizza_categorias() — gráfico donut\npor categoria (matplotlib)
+API -> API : _barras_mensal() — gráfico de barras\nreceitas vs despesas por mês (matplotlib)
+API -> API : FPDF() — monta PDF\n(cabeçalho + cards de resumo + gráficos\n+ tabela de lançamentos)
+API --> View : 200 OK — bytes do PDF
+deactivate API
 
 View -> View : HttpResponse(bytes,\ncontent_type='application/pdf')
 View -> View : Content-Disposition:\nattachment; filename="relatorio-ordo.pdf"
