@@ -441,9 +441,19 @@ def gerar_relatorio(request):
     mes = request.GET.get('mes', '').strip()
     ano = request.GET.get('ano', '').strip()
     try:
-        periodo = f'{_MESES[int(mes)]}/{ano}' if mes and ano else 'Todos os lançamentos'
+        periodo_base = f'{_MESES[int(mes)]}/{ano}' if mes and ano else 'Todos os lançamentos'
     except (ValueError, IndexError):
-        periodo = 'Todos os lançamentos'
+        periodo_base = 'Todos os lançamentos'
+
+    cartao_pk = request.GET.get('cartao', '').strip()
+    if cartao_pk:
+        try:
+            cartao_obj = CartaoCredito.objects.get(pk=int(cartao_pk), usuario=request.user)
+            periodo = f'{cartao_obj.nome} — {periodo_base}'
+        except (CartaoCredito.DoesNotExist, ValueError):
+            periodo = periodo_base
+    else:
+        periodo = periodo_base
 
     payload = {
         'usuario': request.user.username,
