@@ -123,8 +123,7 @@
 
 {% else %}
 <div class="flex-1 flex items-center justify-center">
-    {% url 'adicionar_transacao' as btn_url %}
-    {% include "includes/empty_state.html" with icon="credit-card" title="Nenhuma transação neste período" subtitle="Nenhuma despesa registrada neste cartão para este mês." btn_url=btn_url btn_text="Adicionar Transação" %}
+    {% include "includes/empty_state.html" with icon="credit-card" title="Nenhuma transação neste período" subtitle="Nenhuma despesa registrada neste cartão para este mês." %}
 </div>
 {% endif %}
 

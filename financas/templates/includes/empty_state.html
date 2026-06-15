@@ -3,12 +3,5 @@
         <i data-lucide="{{ icon }}" class="w-7 h-7 text-gray-400"></i>
     </div>
     <h3 class="font-bold text-dark-700 mb-2">{{ title }}</h3>
-    <p class="text-dark-500 text-sm{% if btn_url %} mb-6{% endif %}">{{ subtitle }}</p>
-    {% if btn_url %}
-    <a href="{{ btn_url }}"
-        class="group inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium tracking-wide text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors duration-150 shadow-sm">
-        <i data-lucide="plus" class="w-4 h-4"></i>
-        <span>{{ btn_text }}</span>
-    </a>
-    {% endif %}
+    <p class="text-dark-500 text-sm">{{ subtitle }}</p>
 </div>

@@ -188,6 +188,36 @@ class Command(BaseCommand):
                 "cartao_credito": None, "frequencia": "MENSAL",
                 "proxima_ocorrencia": prox_mes.replace(day=20), "ativa": True,
             },
+            {
+                "tipo": "DESPESA", "descricao": "Plano celular",
+                "valor": Decimal("69.90"), "categoria": cats["Serviços Digitais"],
+                "cartao_credito": nubank, "frequencia": "MENSAL",
+                "proxima_ocorrencia": prox_mes.replace(day=3), "ativa": True,
+            },
+            {
+                "tipo": "DESPESA", "descricao": "Seguro de vida",
+                "valor": Decimal("85.00"), "categoria": cats["Saúde"],
+                "cartao_credito": None, "frequencia": "MENSAL",
+                "proxima_ocorrencia": prox_mes.replace(day=7), "ativa": True,
+            },
+            {
+                "tipo": "DESPESA", "descricao": "Amazon Prime",
+                "valor": Decimal("19.90"), "categoria": cats["Serviços Digitais"],
+                "cartao_credito": nubank, "frequencia": "MENSAL",
+                "proxima_ocorrencia": prox_mes.replace(day=18), "ativa": True,
+            },
+            {
+                "tipo": "DESPESA", "descricao": "IPTU (parcela mensal)",
+                "valor": Decimal("230.00"), "categoria": cats["Moradia"],
+                "cartao_credito": None, "frequencia": "MENSAL",
+                "proxima_ocorrencia": prox_mes.replace(day=10), "ativa": False,
+            },
+            {
+                "tipo": "RECEITA", "descricao": "Freela / consultoria",
+                "valor": Decimal("1200.00"), "categoria": cats["Salário"],
+                "cartao_credito": None, "frequencia": "MENSAL",
+                "proxima_ocorrencia": prox_mes.replace(day=28), "ativa": False,
+            },
         ]
 
         criados = 0

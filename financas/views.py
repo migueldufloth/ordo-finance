@@ -7,8 +7,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Count, Sum
-from django.http import HttpResponse
+from django.db.models import Count, Sum, Q
+from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
@@ -22,6 +22,20 @@ MESES = [
     (5,'Maio'),(6,'Junho'),(7,'Julho'),(8,'Agosto'),
     (9,'Setembro'),(10,'Outubro'),(11,'Novembro'),(12,'Dezembro'),
 ]
+
+
+class AjaxFormMixin:
+    """Retorna JSON para requisições AJAX (modais); comportamento normal para GET direto."""
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'redirect': str(self.get_success_url())})
+        return response
+
+    def form_invalid(self, form):
+        if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'errors': {k: list(v) for k, v in form.errors.items()}}, status=400)
+        return super().form_invalid(form)
 
 
 @login_required
@@ -149,9 +163,14 @@ def _filtrar_transacoes(request):
         qs = qs.filter(tipo=tipo)
     mes = request.GET.get('mes', '').strip()
     ano = request.GET.get('ano', '').strip()
-    if mes and ano:
+    if mes:
         try:
-            qs = qs.filter(data__month=int(mes), data__year=int(ano))
+            qs = qs.filter(data__month=int(mes))
+        except ValueError:
+            pass
+    if ano:
+        try:
+            qs = qs.filter(data__year=int(ano))
         except ValueError:
             pass
     categoria_pk = request.GET.get('categoria', '').strip()
@@ -173,13 +192,32 @@ def _filtrar_transacoes(request):
 def lista_transacoes(request):
     """Lista as transações com filtros e paginação server-side."""
     qs = _filtrar_transacoes(request)
+
+    totais = qs.aggregate(
+        receitas=Sum('valor', filter=Q(tipo='RECEITA')),
+        despesas=Sum('valor', filter=Q(tipo='DESPESA')),
+    )
+    totais['receitas'] = totais['receitas'] or decimal.Decimal('0')
+    totais['despesas'] = totais['despesas'] or decimal.Decimal('0')
+    totais['saldo'] = totais['receitas'] - totais['despesas']
+    totais['saldo_abs'] = abs(totais['saldo'])
+
     paginator = Paginator(qs, 10)
     page_obj = paginator.get_page(request.GET.get('page'))
 
     categorias = Categoria.objects.filter(usuario=request.user)
     cartoes = CartaoCredito.objects.filter(usuario=request.user)
     hoje = timezone.localdate()
-    anos = list(range(2023, hoje.year + 1))
+    anos = list(range(hoje.year, 2022, -1))
+
+    has_filters = any([
+        request.GET.get('q', '').strip(),
+        request.GET.get('tipo', ''),
+        request.GET.get('mes', '').strip(),
+        request.GET.get('ano', '').strip(),
+        request.GET.get('categoria', '').strip(),
+        request.GET.get('cartao', '').strip(),
+    ])
 
     return render(request, "financas/lista_transacoes.html", {
         'page_obj': page_obj,
@@ -188,6 +226,8 @@ def lista_transacoes(request):
         'anos': anos,
         'meses': MESES,
         'filtros': request.GET,
+        'has_filters': has_filters,
+        'totais': totais,
     })
 
 
@@ -215,29 +255,39 @@ def exportar_csv(request):
 @login_required
 def adicionar_transacao(request):
     """Adiciona uma nova transação."""
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     form = TransacaoForm(request.POST or None, user=request.user)
-    
+
     if request.method == "POST" and form.is_valid():
         transacao = form.save(commit=False)
         transacao.usuario = request.user
         transacao.save()
         messages.success(request, "Lançamento adicionado com sucesso.")
+        if is_ajax:
+            return JsonResponse({'redirect': reverse_lazy('lista_transacoes')})
         return redirect("lista_transacoes")
 
+    if is_ajax:
+        return JsonResponse({'errors': {k: list(v) for k, v in form.errors.items()}}, status=400)
     return render(request, "financas/adicionar_transacao.html", {"form": form})
 
 
 @login_required
 def editar_transacao(request, pk):
     """Edita uma transação existente."""
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     transacao = get_object_or_404(Transacao, pk=pk, usuario=request.user)
     form = TransacaoForm(request.POST or None, instance=transacao, user=request.user)
-    
+
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Lançamento atualizado com sucesso.")
+        if is_ajax:
+            return JsonResponse({'redirect': reverse_lazy('lista_transacoes')})
         return redirect("lista_transacoes")
 
+    if is_ajax and request.method == "POST":
+        return JsonResponse({'errors': {k: list(v) for k, v in form.errors.items()}}, status=400)
     return render(request, "financas/adicionar_transacao.html", {"form": form, "editando": True, "transacao": transacao})
 
 
@@ -284,7 +334,7 @@ class CartaoCreditoListView(BaseCartaoCreditoView, ListView):
         return context
 
 
-class CartaoCreditoCreateView(BaseCartaoCreditoView, CreateView):
+class CartaoCreditoCreateView(AjaxFormMixin, BaseCartaoCreditoView, CreateView):
     form_class = CartaoCreditoForm
     template_name = "financas/cartao_credito_form.html"
 
@@ -294,7 +344,7 @@ class CartaoCreditoCreateView(BaseCartaoCreditoView, CreateView):
         return super().form_valid(form)
 
 
-class CartaoCreditoUpdateView(BaseCartaoCreditoView, UpdateView):
+class CartaoCreditoUpdateView(AjaxFormMixin, BaseCartaoCreditoView, UpdateView):
     form_class = CartaoCreditoForm
     template_name = "financas/cartao_credito_form.html"
 
@@ -334,7 +384,7 @@ class CategoriaListView(BaseCategoriaView, ListView):
             .order_by('nome')
         )
 
-class CategoriaCreateView(BaseCategoriaView, CreateView):
+class CategoriaCreateView(AjaxFormMixin, BaseCategoriaView, CreateView):
     form_class = CategoriaForm
     template_name = "financas/categoria_form.html"
 
@@ -343,7 +393,7 @@ class CategoriaCreateView(BaseCategoriaView, CreateView):
         messages.success(self.request, "Categoria criada com sucesso.")
         return super().form_valid(form)
 
-class CategoriaUpdateView(BaseCategoriaView, UpdateView):
+class CategoriaUpdateView(AjaxFormMixin, BaseCategoriaView, UpdateView):
     form_class = CategoriaForm
     template_name = "financas/categoria_form.html"
 
@@ -449,10 +499,11 @@ class OrcamentoListView(BaseOrcamentoView, ListView):
         context['ano'] = ano
         context['meses_lista'] = MESES
         context['anos_lista'] = list(range(2023, hoje.year + 1))
+        context['categorias_modal'] = Categoria.objects.filter(usuario=self.request.user).order_by('nome')
         return context
 
 
-class OrcamentoCreateView(BaseOrcamentoView, CreateView):
+class OrcamentoCreateView(AjaxFormMixin, BaseOrcamentoView, CreateView):
     form_class = OrcamentoForm
     template_name = 'financas/orcamento_form.html'
 
@@ -467,7 +518,7 @@ class OrcamentoCreateView(BaseOrcamentoView, CreateView):
         return super().form_valid(form)
 
 
-class OrcamentoUpdateView(BaseOrcamentoView, UpdateView):
+class OrcamentoUpdateView(AjaxFormMixin, BaseOrcamentoView, UpdateView):
     form_class = OrcamentoForm
     template_name = 'financas/orcamento_form.html'
 
@@ -564,9 +615,46 @@ class BaseTransacaoRecorrenteView(LoginRequiredMixin):
 
 class TransacaoRecorrenteListView(BaseTransacaoRecorrenteView, ListView):
     template_name = 'financas/transacao_recorrente_list.html'
+    paginate_by = 10
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        q = self.request.GET.get('q', '').strip()
+        tipo = self.request.GET.get('tipo', '')
+        frequencia = self.request.GET.get('frequencia', '')
+        ativa = self.request.GET.get('ativa', '')
+        if q:
+            qs = qs.filter(descricao__icontains=q)
+        if tipo:
+            qs = qs.filter(tipo=tipo)
+        if frequencia:
+            qs = qs.filter(frequencia=frequencia)
+        if ativa != '':
+            qs = qs.filter(ativa=(ativa == 'true'))
+        return qs
+
+    def get_context_data(self, **kwargs):
+        from datetime import timedelta
+        context = super().get_context_data(**kwargs)
+        filtros = {k: self.request.GET.get(k, '') for k in ['q', 'tipo', 'frequencia', 'ativa']}
+        hoje = timezone.now().date()
+        all_qs = TransacaoRecorrente.objects.filter(usuario=self.request.user)
+        context.update({
+            'categorias_modal': Categoria.objects.filter(usuario=self.request.user).order_by('nome'),
+            'cartoes_modal': CartaoCredito.objects.filter(usuario=self.request.user),
+            'filtros': filtros,
+            'has_filters': any(filtros.values()),
+            'total_count': all_qs.count(),
+            'stats': {
+                'ativas': all_qs.filter(ativa=True).count(),
+                'inativas': all_qs.filter(ativa=False).count(),
+                'proximas_semana': all_qs.filter(ativa=True, proxima_ocorrencia__lte=hoje + timedelta(days=7)).count(),
+            },
+        })
+        return context
 
 
-class TransacaoRecorrenteCreateView(BaseTransacaoRecorrenteView, CreateView):
+class TransacaoRecorrenteCreateView(AjaxFormMixin, BaseTransacaoRecorrenteView, CreateView):
     form_class = TransacaoRecorrenteForm
     template_name = 'financas/transacao_recorrente_form.html'
 
@@ -581,7 +669,7 @@ class TransacaoRecorrenteCreateView(BaseTransacaoRecorrenteView, CreateView):
         return super().form_valid(form)
 
 
-class TransacaoRecorrenteUpdateView(BaseTransacaoRecorrenteView, UpdateView):
+class TransacaoRecorrenteUpdateView(AjaxFormMixin, BaseTransacaoRecorrenteView, UpdateView):
     form_class = TransacaoRecorrenteForm
     template_name = 'financas/transacao_recorrente_form.html'
 
